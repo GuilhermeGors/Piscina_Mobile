@@ -28,13 +28,16 @@ class SearchBarState extends State<SearchBar> {
 
     try {
       final response = await http.get(Uri.parse(
-          'https://geocoding-api.open-meteo.com/v1/search?name=$query&count=10&language=en&format=json'));
+          'https://geocoding-api.open-meteo.com/v1/search?name=$query&count=5&language=en&format=json')); // Limit to 5
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         debugPrint('API Response: $data');
         if (data['results'] != null && data['results'] is List) {
           setState(() {
-            _suggestions = (data['results'] as List).cast<Map<String, dynamic>>();
+            _suggestions = (data['results'] as List)
+                .cast<Map<String, dynamic>>()
+                .take(5)
+                .toList();
             _errorMessage = null;
           });
           debugPrint('Suggestions fetched: $_suggestions');
@@ -48,22 +51,20 @@ class SearchBarState extends State<SearchBar> {
         }
       } else {
         debugPrint('Failed to fetch suggestions: ${response.statusCode}');
-        debugPrint('Response body: ${response.body}');
         setState(() {
-          _errorMessage = 'The service connection is lost, please check your internet connection or try again later';
+          _errorMessage = 'Failed to connect. Check your internet and try again.';
         });
         _showSuggestions();
       }
     } catch (e) {
       debugPrint('Error fetching suggestions: $e');
       setState(() {
-        _errorMessage = 'The service connection is lost, please check your internet connection or try again later';
+        _errorMessage = 'An error occurred. Please try again later.';
       });
       _showSuggestions();
     }
   }
 
-  // New method to fetch coordinates for a city name directly
   void _fetchCityCoordinates(String cityName) async {
     try {
       final response = await http.get(Uri.parse(
@@ -71,7 +72,7 @@ class SearchBarState extends State<SearchBar> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         debugPrint('API Response for direct search: $data');
-        if (data['results'] != null && data['results'] is List && data['results'].isNotEmpty) {
+        if (data['results'] != null && data['results'].isNotEmpty) {
           final result = data['results'][0];
           final latitude = result['latitude'] as double?;
           final longitude = result['longitude'] as double?;
@@ -93,16 +94,15 @@ class SearchBarState extends State<SearchBar> {
         }
       } else {
         debugPrint('Failed to fetch coordinates: ${response.statusCode}');
-        debugPrint('Response body: ${response.body}');
         setState(() {
-          _errorMessage = 'The service connection is lost, please check your internet connection or try again later';
+          _errorMessage = 'Failed to connect. Check your internet and try again.';
         });
-        _showSuggestions();
-      }
+          _showSuggestions();
+        }
     } catch (e) {
       debugPrint('Error fetching coordinates: $e');
       setState(() {
-        _errorMessage = 'The service connection is lost, please check your internet connection or try again later';
+        _errorMessage = 'An error occurred. Please try again later.';
       });
       _showSuggestions();
     }
@@ -122,16 +122,23 @@ class SearchBarState extends State<SearchBar> {
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         left: offset.dx,
-        top: offset.dy + size.height,
+        top: offset.dy + size.height + 4,
         width: size.width,
         child: Material(
-          elevation: 4.0,
-          borderRadius: BorderRadius.circular(8),
+          elevation: 6.0,
+          borderRadius: BorderRadius.circular(12),
           child: Container(
-            constraints: const BoxConstraints(maxHeight: 200),
+            constraints: const BoxConstraints(maxHeight: 250),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
             child: _errorMessage != null
                 ? Padding(
@@ -139,8 +146,9 @@ class SearchBarState extends State<SearchBar> {
                     child: Text(
                       _errorMessage!,
                       style: const TextStyle(
-                        color: Colors.red,
+                        color: Colors.redAccent,
                         fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   )
@@ -152,31 +160,70 @@ class SearchBarState extends State<SearchBar> {
                           style: TextStyle(
                             color: Colors.grey,
                             fontSize: 16,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       )
-                    : ListView.builder(
+                    : ListView.separated(
                         shrinkWrap: true,
-                        itemCount: _suggestions.length,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: _suggestions.length > 5 ? 5 : _suggestions.length,
+                        separatorBuilder: (context, index) => Divider(
+                          color: Colors.grey[300],
+                          height: 1,
+                          thickness: 1,
+                          indent: 16,
+                          endIndent: 16,
+                        ),
                         itemBuilder: (context, index) {
                           final suggestion = _suggestions[index];
                           final cityName = suggestion['name'] ?? 'Unknown';
-                          final region = suggestion['admin1'] ?? 'Unknown';
-                          final country = suggestion['country'] ?? 'Unknown';
+                          final region = suggestion['admin1'] ?? '';
+                          final country = suggestion['country'] ?? '';
                           final latitude = suggestion['latitude'] as double?;
                           final longitude = suggestion['longitude'] as double?;
 
                           return ListTile(
-                            title: Text('$cityName, $region, $country'),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            leading: const Icon(
+                              Icons.location_city,
+                              color: Colors.blueAccent,
+                              size: 24,
+                            ),
+                            title: RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: cityName,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  if (region.isNotEmpty || country.isNotEmpty)
+                                    TextSpan(
+                                      text: ', $region${region.isNotEmpty && country.isNotEmpty ? ', ' : ''}$country',
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.normal,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
                             onTap: () {
                               if (latitude != null && longitude != null) {
-                                widget.onCitySelected('$cityName, $region, $country', latitude, longitude);
+                                widget.onCitySelected('$cityName${region.isNotEmpty ? ', $region' : ''}', latitude, longitude);
                                 _controller.clear();
                                 _hideSuggestions();
                               } else {
-                                debugPrint('Error: Latitude or longitude missing for suggestion');
+                                debugPrint('Error: Latitude or longitude missing');
                               }
                             },
+                            tileColor: Colors.white,
+                            hoverColor: Colors.grey[100],
                           );
                         },
                       ),
@@ -214,26 +261,40 @@ class SearchBarState extends State<SearchBar> {
       },
       child: Container(
         constraints: const BoxConstraints(maxWidth: 300),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
         child: TextField(
           controller: _controller,
           focusNode: _focusNode,
           decoration: InputDecoration(
-            hintText: 'Search city',
-            prefixIcon: const Icon(Icons.search),
+            hintText: 'Search for a city...',
+            hintStyle: TextStyle(color: Colors.grey[500]),
+            prefixIcon: const Icon(Icons.search, color: Colors.blueAccent),
             suffixIcon: IconButton(
-              icon: const Icon(Icons.clear),
+              icon: const Icon(Icons.clear, color: Colors.grey),
               onPressed: () {
                 _controller.clear();
                 _hideSuggestions();
               },
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
             filled: true,
             fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           ),
+          style: const TextStyle(fontSize: 16, color: Colors.black),
           onChanged: (query) {
             _fetchSuggestions(query);
           },
@@ -241,7 +302,7 @@ class SearchBarState extends State<SearchBar> {
             if (query.isNotEmpty) {
               if (_suggestions.isNotEmpty) {
                 final matchingSuggestion = _suggestions.firstWhere(
-                  (suggestion) => suggestion['name'].toString().toLowerCase() == query.toLowerCase(),
+                  (s) => (s['name'] as String).toLowerCase() == query.toLowerCase(),
                   orElse: () => {},
                 );
                 if (matchingSuggestion.isNotEmpty) {

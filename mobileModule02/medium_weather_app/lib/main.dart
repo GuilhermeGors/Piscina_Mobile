@@ -32,7 +32,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _displayText = ''; // Initial empty display text
+  String _displayText = 'Weather App';
   Map<String, dynamic> _currentWeather = {};
   List<Map<String, dynamic>> _hourlyWeather = [];
   List<Map<String, dynamic>> _dailyWeather = [];
@@ -42,6 +42,19 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
+    _fetchInitialLocation();
+  }
+
+  Future<void> _fetchInitialLocation() async {
+    try {
+      final location = await Location.fetchGeolocation();
+      _updateDisplayText('Weather in ${location.name}', location.latitude, location.longitude);
+    } catch (e) {
+      debugPrint('Initial geolocation error: $e');
+      setState(() {
+        _errorMessage = '$e. You can still search by city name.';
+      });
+    }
   }
 
   @override
@@ -52,11 +65,13 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   void _updateDisplayText(String text, double latitude, double longitude) {
     setState(() {
-      _displayText = text;
-      _errorMessage = (latitude == 0.0 && longitude == 0.0) ? text : null;
       if (latitude != 0.0 && longitude != 0.0) {
+        _displayText = text;
+        _errorMessage = null;
         _fetchWeather(latitude, longitude);
       } else {
+        _displayText = _displayText.isEmpty ? 'Weather App' : _displayText;
+        _errorMessage = text;
         _currentWeather = {};
         _hourlyWeather = [];
         _dailyWeather = [];
@@ -140,7 +155,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         final dates = dailyData['time'] as List;
         final maxTemps = dailyData['temperature_2m_max'] as List;
         final minTemps = dailyData['temperature_2m_min'] as List;
-        final dailyWeatherCodes = dailyData['weathercode'] as List;
+        final dailyWeatherCodes = data['daily']['weathercode'] as List;
 
         setState(() {
           _dailyWeather = List.generate(

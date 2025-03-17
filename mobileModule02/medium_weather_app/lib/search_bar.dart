@@ -63,7 +63,6 @@ class SearchBarState extends State<SearchBar> {
     }
   }
 
-  // New method to fetch coordinates for a city name directly
   void _fetchCityCoordinates(String cityName) async {
     try {
       final response = await http.get(Uri.parse(

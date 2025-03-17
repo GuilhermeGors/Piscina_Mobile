@@ -32,16 +32,38 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _displayText = ''; // Initial empty display text
+  String _displayText = 'Weather App';
   Map<String, dynamic> _currentWeather = {};
   List<Map<String, dynamic>> _hourlyWeather = [];
   List<Map<String, dynamic>> _dailyWeather = [];
   String? _errorMessage;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
+    _requestLocationOnStart();
+  }
+
+  Future<void> _requestLocationOnStart() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final location = await Location.fetchGeolocation();
+      _updateDisplayText('Weather in ${location.name}', location.latitude, location.longitude);
+    } catch (e) {
+      debugPrint('Initial location error: $e');
+      setState(() {
+        _errorMessage = '$e. You can still search by city name.';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -52,11 +74,13 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   void _updateDisplayText(String text, double latitude, double longitude) {
     setState(() {
-      _displayText = text;
-      _errorMessage = (latitude == 0.0 && longitude == 0.0) ? text : null;
       if (latitude != 0.0 && longitude != 0.0) {
+        _displayText = text;
+        _errorMessage = null;
         _fetchWeather(latitude, longitude);
       } else {
+        _displayText = _displayText.isEmpty ? 'Weather App' : _displayText;
+        _errorMessage = text;
         _currentWeather = {};
         _hourlyWeather = [];
         _dailyWeather = [];
@@ -197,168 +221,172 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         onTap: () {
           FocusScope.of(context).unfocus();
         },
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            // Aba "Currently"
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : TabBarView(
+                controller: _tabController,
                 children: [
-                  Text(
-                    'Current\n$_displayText',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_errorMessage != null)
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 18,
-                      ),
-                    )
-                  else if (_currentWeather.isNotEmpty)
-                    Column(
+                  // Aba "Currently"
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Temperature: ${_currentWeather['temperature']}°C',
-                          style: const TextStyle(fontSize: 18),
+                          'Current\n$_displayText',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                          ),
                         ),
-                        Text(
-                          'Weather: ${_currentWeather['weatherDescription']}',
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                        Text(
-                          'Wind Speed: ${_currentWeather['windspeed']} km/h',
-                          style: const TextStyle(fontSize: 18),
-                        ),
+                        const SizedBox(height: 16),
+                        if (_errorMessage != null)
+                          Text(
+                            _errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 18,
+                            ),
+                          )
+                        else if (_currentWeather.isNotEmpty)
+                          Column(
+                            children: [
+                              Text(
+                                'Temperature: ${_currentWeather['temperature']}°C',
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                              Text(
+                                'Weather: ${_currentWeather['weatherDescription']}',
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                              Text(
+                                'Wind Speed: ${_currentWeather['windspeed']} km/h',
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                            ],
+                          )
+                        else
+                          const Text(
+                            'No current weather data available',
+                            style: TextStyle(fontSize: 18),
+                          ),
                       ],
-                    )
-                  else
-                    const Text(
-                      'No current weather data available',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                ],
-              ),
-            ),
-            // Aba "Today"
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    'Today\n$_displayText',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  if (_errorMessage != null)
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 18,
-                      ),
-                    )
-                  else
-                    Expanded(
-                      child: _hourlyWeather.isNotEmpty
-                          ? ListView.builder(
-                              itemCount: _hourlyWeather.length,
-                              itemBuilder: (context, index) {
-                                final hourly = _hourlyWeather[index];
-                                final time = hourly['time'] as String;
-                                final hour = time.split('T')[1].substring(0, 5);
-                                final temperature = hourly['temperature'] as double;
-                                final weatherDescription = hourly['weatherDescription'] as String;
-                                final windspeed = hourly['windspeed'] as double;
-                                return ListTile(
-                                  title: Text('Hour: $hour'),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Temperature: $temperature°C'),
-                                      Text('Weather: $weatherDescription'),
-                                      Text('Wind Speed: $windspeed km/h'),
-                                    ],
-                                  ),
-                                );
-                              },
-                            )
-                          : const Text(
-                              'No hourly weather data available',
-                              style: TextStyle(fontSize: 18),
+                  // Aba "Today"
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          'Today\n$_displayText',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (_errorMessage != null)
+                          Text(
+                            _errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 18,
                             ),
-                    ),
-                ],
-              ),
-            ),
-            // Aba "Weekly"
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    'Weekly\n$_displayText',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
+                          )
+                        else
+                          Expanded(
+                            child: _hourlyWeather.isNotEmpty
+                                ? ListView.builder(
+                                    itemCount: _hourlyWeather.length,
+                                    itemBuilder: (context, index) {
+                                      final hourly = _hourlyWeather[index];
+                                      final time = hourly['time'] as String;
+                                      final hour = time.split('T')[1].substring(0, 5);
+                                      final temperature = hourly['temperature'] as double;
+                                      final weatherDescription = hourly['weatherDescription'] as String;
+                                      final windspeed = hourly['windspeed'] as double;
+                                      return ListTile(
+                                        title: Text('Hour: $hour'),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('Temperature: $temperature°C'),
+                                            Text('Weather: $weatherDescription'),
+                                            Text('Wind Speed: $windspeed km/h'),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : const Text(
+                                    'No hourly weather data available',
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                          ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  if (_errorMessage != null)
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 18,
-                      ),
-                    )
-                  else
-                    Expanded(
-                      child: _dailyWeather.isNotEmpty
-                          ? ListView.builder(
-                              itemCount: _dailyWeather.length,
-                              itemBuilder: (context, index) {
-                                final daily = _dailyWeather[index];
-                                final date = daily['date'] as String;
-                                final maxTemperature = daily['maxTemperature'] as double;
-                                final minTemperature = daily['minTemperature'] as double;
-                                final weatherDescription = daily['weatherDescription'] as String;
-                                return ListTile(
-                                  title: Text('Date: $date'),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Max Temperature: $maxTemperature°C'),
-                                      Text('Min Temperature: $minTemperature°C'),
-                                      Text('Weather: $weatherDescription'),
-                                    ],
-                                  ),
-                                );
-                              },
-                            )
-                          : const Text(
-                              'No weekly weather data available',
-                              style: TextStyle(fontSize: 18),
+                  // Aba "Weekly"
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          'Weekly\n$_displayText',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (_errorMessage != null)
+                          Text(
+                            _errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 18,
                             ),
+                          )
+                        else
+                          Expanded(
+                            child: _dailyWeather.isNotEmpty
+                                ? ListView.builder(
+                                    itemCount: _dailyWeather.length,
+                                    itemBuilder: (context, index) {
+                                      final daily = _dailyWeather[index];
+                                      final date = daily['date'] as String;
+                                      final maxTemperature = daily['maxTemperature'] as double;
+                                      final minTemperature = daily['minTemperature'] as double;
+                                      final weatherDescription = daily['weatherDescription'] as String;
+                                      return ListTile(
+                                        title: Text('Date: $date'),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('Max Temperature: $maxTemperature°C'),
+                                            Text('Min Temperature: $minTemperature°C'),
+                                            Text('Weather: $weatherDescription'),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : const Text(
+                                    'No weekly weather data available',
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                          ),
+                      ],
                     ),
+                  ),
                 ],
               ),
-            ),
-          ],
-        ),
       ),
       bottomNavigationBar: BottomAppBar(
         color: Theme.of(context).colorScheme.inversePrimary,
