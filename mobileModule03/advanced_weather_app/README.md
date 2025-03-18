@@ -1,4 +1,4 @@
-# medium_weather_app
+# advanced_weather_app
 
 A new Flutter project.
 

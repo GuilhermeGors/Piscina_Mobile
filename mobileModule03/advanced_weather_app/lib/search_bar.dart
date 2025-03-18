@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class SearchBar extends StatefulWidget {
-  final Function(String, double, double) onCitySelected;
+  final Function(String, String?, String?, double, double) onCitySelected;
 
   const SearchBar({required this.onCitySelected, super.key});
 
@@ -28,7 +28,7 @@ class SearchBarState extends State<SearchBar> {
 
     try {
       final response = await http.get(Uri.parse(
-          'https://geocoding-api.open-meteo.com/v1/search?name=$query&count=5&language=en&format=json')); // Limit to 5
+          'https://geocoding-api.open-meteo.com/v1/search?name=$query&count=5&language=en&format=json'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         debugPrint('API Response: $data');
@@ -76,8 +76,10 @@ class SearchBarState extends State<SearchBar> {
           final result = data['results'][0];
           final latitude = result['latitude'] as double?;
           final longitude = result['longitude'] as double?;
+          final state = result['admin1'] as String?;
+          final country = result['country'] as String?;
           if (latitude != null && longitude != null) {
-            widget.onCitySelected(cityName, latitude, longitude);
+            widget.onCitySelected(cityName, state, country, latitude, longitude);
             _controller.clear();
             _hideSuggestions();
           } else {
@@ -97,8 +99,8 @@ class SearchBarState extends State<SearchBar> {
         setState(() {
           _errorMessage = 'Failed to connect. Check your internet and try again.';
         });
-          _showSuggestions();
-        }
+        _showSuggestions();
+      }
     } catch (e) {
       debugPrint('Error fetching coordinates: $e');
       setState(() {
@@ -215,7 +217,7 @@ class SearchBarState extends State<SearchBar> {
                             ),
                             onTap: () {
                               if (latitude != null && longitude != null) {
-                                widget.onCitySelected('$cityName${region.isNotEmpty ? ', $region' : ''}', latitude, longitude);
+                                widget.onCitySelected(cityName, region, country, latitude, longitude);
                                 _controller.clear();
                                 _hideSuggestions();
                               } else {
@@ -308,8 +310,10 @@ class SearchBarState extends State<SearchBar> {
                 if (matchingSuggestion.isNotEmpty) {
                   final latitude = matchingSuggestion['latitude'] as double?;
                   final longitude = matchingSuggestion['longitude'] as double?;
+                  final state = matchingSuggestion['admin1'] as String?;
+                  final country = matchingSuggestion['country'] as String?;
                   if (latitude != null && longitude != null) {
-                    widget.onCitySelected(query, latitude, longitude);
+                    widget.onCitySelected(query, state, country, latitude, longitude);
                     _controller.clear();
                     _hideSuggestions();
                     return;

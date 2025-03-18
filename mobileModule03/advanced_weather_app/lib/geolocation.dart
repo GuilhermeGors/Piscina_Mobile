@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class Location {
   final double _latitude;
@@ -20,11 +22,19 @@ class Location {
         _region = region,
         _country = country;
 
-  factory Location._fromGeolocation(Position position) {
+  factory Location._fromGeolocation(Position position, Map<String, dynamic> geocodeData) {
+    // Extract city, state, and country from geocode data
+    final address = geocodeData['address'] ?? {};
+    String city = address['city'] ?? address['town'] ?? address['village'] ?? 'Unknown City';
+    String? region = address['state'] ?? address['region'];
+    String? country = address['country'];
+
     return Location._(
       latitude: position.latitude,
       longitude: position.longitude,
-      name: 'Geolocation',
+      name: city,
+      region: region,
+      country: country,
     );
   }
 
@@ -48,8 +58,7 @@ class Location {
       debugPrint('Permission denied, requesting...');
       permission = await Geolocator.requestPermission();
       debugPrint('Permission result: $permission');
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
         throw 'Geolocation is not available, location permissions are denied';
       }
     }
@@ -63,12 +72,32 @@ class Location {
       },
     );
     debugPrint('Position fetched: ${position.latitude}, ${position.longitude}');
-    return Location._fromGeolocation(position);
+
+    // Reverse geocode using Nominatim API
+    final url = 'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json';
+    debugPrint('Fetching geocode data from: $url');
+    final response = await http.get(Uri.parse(url));
+    debugPrint('Geocode API status: ${response.statusCode}');
+    debugPrint('Geocode API response: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final geocodeData = json.decode(response.body);
+      return Location._fromGeolocation(position, geocodeData);
+    } else {
+      debugPrint('Failed to fetch geocode data: ${response.statusCode}');
+      return Location._(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        name: 'Unknown Location',
+        region: null,
+        country: null,
+      );
+    }
   }
 }
 
 class GeolocationButton extends StatefulWidget {
-  final Function(String, double, double) onLocationUpdated;
+  final Function(String, String?, String?, double, double) onLocationUpdated;
 
   const GeolocationButton({required this.onLocationUpdated, super.key});
 
@@ -86,10 +115,10 @@ class GeolocationButtonState extends State<GeolocationButton> {
 
     try {
       final location = await Location.fetchGeolocation();
-      widget.onLocationUpdated(location.name, location.latitude, location.longitude);
+      widget.onLocationUpdated(location.name, location.region, location.country, location.latitude, location.longitude);
     } catch (e) {
       debugPrint('Geolocation error: $e');
-      widget.onLocationUpdated('$e. You can still search by city name.', 0.0, 0.0);
+      widget.onLocationUpdated('$e', null, null, 0.0, 0.0);
     } finally {
       setState(() {
         _isLoading = false;
