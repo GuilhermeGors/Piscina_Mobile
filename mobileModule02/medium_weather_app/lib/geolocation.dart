@@ -48,8 +48,7 @@ class Location {
       debugPrint('Permission denied, requesting...');
       permission = await Geolocator.requestPermission();
       debugPrint('Permission result: $permission');
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
         throw 'Geolocation is not available, location permissions are denied';
       }
     }
@@ -89,7 +88,8 @@ class GeolocationButtonState extends State<GeolocationButton> {
       widget.onLocationUpdated(location.name, location.latitude, location.longitude);
     } catch (e) {
       debugPrint('Geolocation error: $e');
-      widget.onLocationUpdated('$e. You can still search by city name.', 0.0, 0.0);
+      // Passar apenas a mensagem de erro, sem coordenadas inválidas
+      widget.onLocationUpdated('$e', 0.0, 0.0);
     } finally {
       setState(() {
         _isLoading = false;

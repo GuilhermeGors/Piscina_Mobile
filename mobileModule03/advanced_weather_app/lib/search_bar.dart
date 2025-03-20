@@ -4,8 +4,9 @@ import 'dart:convert';
 
 class SearchBar extends StatefulWidget {
   final Function(String, String?, String?, double, double) onCitySelected;
+  final Function(String) onError; // Novo callback para erros
 
-  const SearchBar({required this.onCitySelected, super.key});
+  const SearchBar({required this.onCitySelected, required this.onError, super.key});
 
   @override
   SearchBarState createState() => SearchBarState();
@@ -34,10 +35,7 @@ class SearchBarState extends State<SearchBar> {
         debugPrint('API Response: $data');
         if (data['results'] != null && data['results'] is List) {
           setState(() {
-            _suggestions = (data['results'] as List)
-                .cast<Map<String, dynamic>>()
-                .take(5)
-                .toList();
+            _suggestions = (data['results'] as List).cast<Map<String, dynamic>>().take(5).toList();
             _errorMessage = null;
           });
           debugPrint('Suggestions fetched: $_suggestions');
@@ -83,30 +81,22 @@ class SearchBarState extends State<SearchBar> {
             _controller.clear();
             _hideSuggestions();
           } else {
-            setState(() {
-              _errorMessage = 'Could not retrieve coordinates for "$cityName"';
-            });
-            _showSuggestions();
+            widget.onError('Could not retrieve coordinates for "$cityName"');
+            _hideSuggestions();
           }
         } else {
-          setState(() {
-            _errorMessage = 'No results found for "$cityName"';
-          });
-          _showSuggestions();
+          widget.onError('"$cityName" does not exist or is not a valid location.');
+          _hideSuggestions();
         }
       } else {
         debugPrint('Failed to fetch coordinates: ${response.statusCode}');
-        setState(() {
-          _errorMessage = 'Failed to connect. Check your internet and try again.';
-        });
-        _showSuggestions();
+        widget.onError('Failed to connect. Check your internet and try again.');
+        _hideSuggestions();
       }
     } catch (e) {
       debugPrint('Error fetching coordinates: $e');
-      setState(() {
-        _errorMessage = 'An error occurred. Please try again later.';
-      });
-      _showSuggestions();
+      widget.onError('An error occurred while searching for "$cityName". Please try again.');
+      _hideSuggestions();
     }
   }
 
@@ -302,25 +292,7 @@ class SearchBarState extends State<SearchBar> {
           },
           onSubmitted: (query) {
             if (query.isNotEmpty) {
-              if (_suggestions.isNotEmpty) {
-                final matchingSuggestion = _suggestions.firstWhere(
-                  (s) => (s['name'] as String).toLowerCase() == query.toLowerCase(),
-                  orElse: () => {},
-                );
-                if (matchingSuggestion.isNotEmpty) {
-                  final latitude = matchingSuggestion['latitude'] as double?;
-                  final longitude = matchingSuggestion['longitude'] as double?;
-                  final state = matchingSuggestion['admin1'] as String?;
-                  final country = matchingSuggestion['country'] as String?;
-                  if (latitude != null && longitude != null) {
-                    widget.onCitySelected(query, state, country, latitude, longitude);
-                    _controller.clear();
-                    _hideSuggestions();
-                    return;
-                  }
-                }
-              }
-              _fetchCityCoordinates(query);
+              _fetchCityCoordinates(query); // Busca direta ao pressionar Enter
             }
           },
         ),

@@ -65,13 +65,14 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   void _updateDisplayText(String text, double latitude, double longitude) {
     setState(() {
-      if (latitude != 0.0 && longitude != 0.0) {
+      // Validar latitude e longitude antes de prosseguir
+      if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
         _displayText = text;
         _errorMessage = null;
         _fetchWeather(latitude, longitude);
       } else {
         _displayText = _displayText.isEmpty ? 'Weather App' : _displayText;
-        _errorMessage = text;
+        _errorMessage = 'Invalid coordinates received: $text';
         _currentWeather = {};
         _hourlyWeather = [];
         _dailyWeather = [];
@@ -79,39 +80,32 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     });
   }
 
+  void _handleSearchError(String error) {
+    setState(() {
+      _errorMessage = error;
+      _currentWeather = {};
+      _hourlyWeather = [];
+      _dailyWeather = [];
+    });
+  }
+
   String getWeatherDescription(int weatherCode) {
     const weatherDescriptions = {
-      0: 'Clear sky',
-      1: 'Mainly clear',
-      2: 'Partly cloudy',
-      3: 'Overcast',
-      45: 'Fog',
-      48: 'Depositing rime fog',
-      51: 'Light drizzle',
-      53: 'Moderate drizzle',
-      55: 'Dense drizzle',
-      61: 'Light rain',
-      63: 'Moderate rain',
-      65: 'Heavy rain',
-      71: 'Light snow',
-      73: 'Moderate snow',
-      75: 'Heavy snow',
-      80: 'Light rain showers',
-      81: 'Moderate rain showers',
-      82: 'Heavy rain showers',
-      95: 'Thunderstorm',
-      96: 'Thunderstorm with light hail',
+      0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast', 45: 'Fog', 48: 'Depositing rime fog',
+      51: 'Light drizzle', 53: 'Moderate drizzle', 55: 'Dense drizzle', 61: 'Light rain', 63: 'Moderate rain',
+      65: 'Heavy rain', 71: 'Light snow', 73: 'Moderate snow', 75: 'Heavy snow', 80: 'Light rain showers',
+      81: 'Moderate rain showers', 82: 'Heavy rain showers', 95: 'Thunderstorm', 96: 'Thunderstorm with light hail',
       99: 'Thunderstorm with heavy hail',
     };
-
     return weatherDescriptions[weatherCode] ?? 'Unknown';
   }
 
   void _fetchWeather(double latitude, double longitude) async {
     try {
       debugPrint('Fetching weather for lat: $latitude, lon: $longitude');
-      final response = await http.get(Uri.parse(
-          'https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current=temperature_2m,weathercode,windspeed_10m&hourly=temperature_2m,weathercode,windspeed_10m&daily=weathercode,temperature_2m_max,temperature_2m_min'));
+      final url = 'https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current=temperature_2m,weathercode,windspeed_10m&hourly=temperature_2m,weathercode,windspeed_10m&daily=weathercode,temperature_2m_max,temperature_2m_min';
+      debugPrint('Weather API URL: $url');
+      final response = await http.get(Uri.parse(url));
       debugPrint('Weather API response status: ${response.statusCode}');
       debugPrint('Weather API response body: ${response.body}');
 
@@ -176,7 +170,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           _currentWeather = {};
           _hourlyWeather = [];
           _dailyWeather = [];
-          _errorMessage = 'Failed to fetch weather data (Status: ${response.statusCode}). Please try again.';
+          _errorMessage = 'Failed to fetch weather data. Please try again.';
         });
       }
     } catch (e) {
@@ -185,7 +179,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         _currentWeather = {};
         _hourlyWeather = [];
         _dailyWeather = [];
-        _errorMessage = 'Error fetching weather: $e. Please check your connection or try again.';
+        _errorMessage = 'Error fetching weather. Please check your connection or try again.';
       });
     }
   }
@@ -198,6 +192,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           onCitySelected: (cityName, latitude, longitude) {
             _updateDisplayText('Weather in $cityName', latitude, longitude);
           },
+          onError: _handleSearchError,
         ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
@@ -215,7 +210,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         child: TabBarView(
           controller: _tabController,
           children: [
-            // Aba "Currently"
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -263,7 +257,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                 ],
               ),
             ),
-            // Aba "Today"
             Center(
               child: Column(
                 children: [
@@ -318,7 +311,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                 ],
               ),
             ),
-            // Aba "Weekly"
             Center(
               child: Column(
                 children: [

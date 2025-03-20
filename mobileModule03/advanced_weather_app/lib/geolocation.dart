@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class Location {
   final double _latitude;
@@ -22,18 +20,11 @@ class Location {
         _region = region,
         _country = country;
 
-  factory Location._fromGeolocation(Position position, Map<String, dynamic> geocodeData) {
-    final address = geocodeData['address'] ?? {};
-    String city = address['city'] ?? address['town'] ?? address['village'] ?? 'Unknown City';
-    String? region = address['state'] ?? address['region'];
-    String? country = address['country'];
-
+  factory Location._fromGeolocation(Position position) {
     return Location._(
       latitude: position.latitude,
       longitude: position.longitude,
-      name: city,
-      region: region,
-      country: country,
+      name: 'Geolocation',
     );
   }
 
@@ -53,17 +44,23 @@ class Location {
 
     debugPrint('Checking permission...');
     LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
       debugPrint('Permission denied, requesting...');
       permission = await Geolocator.requestPermission();
       debugPrint('Permission result: $permission');
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied) {
         throw 'Geolocation is not available, location permissions are denied';
+      } else if (permission == LocationPermission.deniedForever) {
+        throw 'Geolocation is permanently denied. Please enable it in settings.';
       }
     }
 
+    // Se chegou aqui, a permissão é granted ou always
     debugPrint('Fetching position...');
-    Position position = await Geolocator.getCurrentPosition().timeout(
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+      forceAndroidLocationManager: true, // Evitar cache em Android
+    ).timeout(
       const Duration(seconds: 10),
       onTimeout: () {
         debugPrint('Geolocation timed out.');
@@ -71,31 +68,12 @@ class Location {
       },
     );
     debugPrint('Position fetched: ${position.latitude}, ${position.longitude}');
-
-    final url = 'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json';
-    debugPrint('Fetching geocode data from: $url');
-    final response = await http.get(Uri.parse(url));
-    debugPrint('Geocode API status: ${response.statusCode}');
-    debugPrint('Geocode API response: ${response.body}');
-
-    if (response.statusCode == 200) {
-      final geocodeData = json.decode(response.body);
-      return Location._fromGeolocation(position, geocodeData);
-    } else {
-      debugPrint('Failed to fetch geocode data: ${response.statusCode}');
-      return Location._(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        name: 'Unknown Location',
-        region: null,
-        country: null,
-      );
-    }
+    return Location._fromGeolocation(position);
   }
 }
 
 class GeolocationButton extends StatefulWidget {
-  final Function(String, String?, String?, double, double) onLocationUpdated;
+  final Function(String, double, double) onLocationUpdated;
 
   const GeolocationButton({required this.onLocationUpdated, super.key});
 
@@ -113,10 +91,10 @@ class GeolocationButtonState extends State<GeolocationButton> {
 
     try {
       final location = await Location.fetchGeolocation();
-      widget.onLocationUpdated(location.name, location.region, location.country, location.latitude, location.longitude);
+      widget.onLocationUpdated(location.name, location.latitude, location.longitude);
     } catch (e) {
       debugPrint('Geolocation error: $e');
-      widget.onLocationUpdated('$e', null, null, 0.0, 0.0);
+      widget.onLocationUpdated('$e', 0.0, 0.0); // Passa erro com coordenadas inválidas
     } finally {
       setState(() {
         _isLoading = false;

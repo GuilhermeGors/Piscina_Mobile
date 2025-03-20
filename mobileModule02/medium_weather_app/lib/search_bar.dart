@@ -4,8 +4,9 @@ import 'dart:convert';
 
 class SearchBar extends StatefulWidget {
   final Function(String, double, double) onCitySelected;
+  final Function(String) onError; // Novo callback para erros
 
-  const SearchBar({required this.onCitySelected, super.key});
+  const SearchBar({required this.onCitySelected, required this.onError, super.key});
 
   @override
   SearchBarState createState() => SearchBarState();
@@ -37,7 +38,6 @@ class SearchBarState extends State<SearchBar> {
             _suggestions = (data['results'] as List).cast<Map<String, dynamic>>();
             _errorMessage = null;
           });
-          debugPrint('Suggestions fetched: $_suggestions');
           _showSuggestions();
         } else {
           debugPrint('No suggestions found in API response');
@@ -48,16 +48,15 @@ class SearchBarState extends State<SearchBar> {
         }
       } else {
         debugPrint('Failed to fetch suggestions: ${response.statusCode}');
-        debugPrint('Response body: ${response.body}');
         setState(() {
-          _errorMessage = 'The service connection is lost, please check your internet connection or try again later';
+          _errorMessage = 'Failed to connect. Check your internet.';
         });
         _showSuggestions();
       }
     } catch (e) {
       debugPrint('Error fetching suggestions: $e');
       setState(() {
-        _errorMessage = 'The service connection is lost, please check your internet connection or try again later';
+        _errorMessage = 'Connection error. Please try again.';
       });
       _showSuggestions();
     }
@@ -69,8 +68,8 @@ class SearchBarState extends State<SearchBar> {
           'https://geocoding-api.open-meteo.com/v1/search?name=$cityName&count=1&language=en&format=json'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint('API Response for direct search: $data');
-        if (data['results'] != null && data['results'] is List && data['results'].isNotEmpty) {
+        debugPrint('Direct search API Response: $data');
+        if (data['results'] != null && data['results'].isNotEmpty) {
           final result = data['results'][0];
           final latitude = result['latitude'] as double?;
           final longitude = result['longitude'] as double?;
@@ -79,31 +78,22 @@ class SearchBarState extends State<SearchBar> {
             _controller.clear();
             _hideSuggestions();
           } else {
-            setState(() {
-              _errorMessage = 'Could not retrieve coordinates for "$cityName"';
-            });
-            _showSuggestions();
+            widget.onError('Coordinates not found for "$cityName"');
+            _hideSuggestions();
           }
         } else {
-          setState(() {
-            _errorMessage = 'No results found for "$cityName"';
-          });
-          _showSuggestions();
+          widget.onError('"$cityName" does not exist or is not a valid location.');
+          _hideSuggestions();
         }
       } else {
         debugPrint('Failed to fetch coordinates: ${response.statusCode}');
-        debugPrint('Response body: ${response.body}');
-        setState(() {
-          _errorMessage = 'The service connection is lost, please check your internet connection or try again later';
-        });
-        _showSuggestions();
+        widget.onError('Failed to connect. Check your internet.');
+        _hideSuggestions();
       }
     } catch (e) {
       debugPrint('Error fetching coordinates: $e');
-      setState(() {
-        _errorMessage = 'The service connection is lost, please check your internet connection or try again later';
-      });
-      _showSuggestions();
+      widget.onError('Connection error. Please try again.');
+      _hideSuggestions();
     }
   }
 
@@ -160,20 +150,20 @@ class SearchBarState extends State<SearchBar> {
                         itemBuilder: (context, index) {
                           final suggestion = _suggestions[index];
                           final cityName = suggestion['name'] ?? 'Unknown';
-                          final region = suggestion['admin1'] ?? 'Unknown';
-                          final country = suggestion['country'] ?? 'Unknown';
+                          final region = suggestion['admin1'] ?? '';
+                          final country = suggestion['country'] ?? '';
                           final latitude = suggestion['latitude'] as double?;
                           final longitude = suggestion['longitude'] as double?;
 
                           return ListTile(
-                            title: Text('$cityName, $region, $country'),
+                            title: Text('$cityName${region.isNotEmpty ? ', $region' : ''}${country.isNotEmpty ? ', $country' : ''}'),
                             onTap: () {
                               if (latitude != null && longitude != null) {
-                                widget.onCitySelected('$cityName, $region, $country', latitude, longitude);
+                                widget.onCitySelected(cityName, latitude, longitude);
                                 _controller.clear();
                                 _hideSuggestions();
                               } else {
-                                debugPrint('Error: Latitude or longitude missing for suggestion');
+                                debugPrint('Error: Missing coordinates');
                               }
                             },
                           );
@@ -238,22 +228,6 @@ class SearchBarState extends State<SearchBar> {
           },
           onSubmitted: (query) {
             if (query.isNotEmpty) {
-              if (_suggestions.isNotEmpty) {
-                final matchingSuggestion = _suggestions.firstWhere(
-                  (suggestion) => suggestion['name'].toString().toLowerCase() == query.toLowerCase(),
-                  orElse: () => {},
-                );
-                if (matchingSuggestion.isNotEmpty) {
-                  final latitude = matchingSuggestion['latitude'] as double?;
-                  final longitude = matchingSuggestion['longitude'] as double?;
-                  if (latitude != null && longitude != null) {
-                    widget.onCitySelected(query, latitude, longitude);
-                    _controller.clear();
-                    _hideSuggestions();
-                    return;
-                  }
-                }
-              }
               _fetchCityCoordinates(query);
             }
           },

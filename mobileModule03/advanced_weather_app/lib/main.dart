@@ -86,19 +86,31 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   void _updateDisplayText(String cityName, String? state, String? country, double latitude, double longitude) {
     debugPrint('Updating display: city=$cityName, state=$state, country=$country, lat=$latitude, lon=$longitude');
     setState(() {
-      if (latitude != 0.0 && longitude != 0.0 && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+      if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180 && latitude != 0.0 && longitude != 0.0) {
         _cityName = cityName;
-        _stateCountry = state != null && country != null ? '$state, $country' : '';
+        List<String> parts = [];
+        if (state != null && state.isNotEmpty) parts.add(state);
+        if (country != null && country.isNotEmpty) parts.add(country);
+        _stateCountry = parts.isNotEmpty ? parts.join(', ') : '';
         _errorMessage = null;
         _fetchWeather(latitude, longitude);
       } else {
         _cityName = _cityName.isEmpty ? 'Weather App' : _cityName;
         _stateCountry = '';
-        _errorMessage = 'Failed to retrieve valid coordinates from your location. Please try again.';
+        _errorMessage = cityName.contains('Geolocation') ? cityName : 'Invalid coordinates received for "$cityName". Please try again.';
         _currentWeather = {};
         _hourlyWeather = [];
         _dailyWeather = [];
       }
+    });
+  }
+
+  void _handleSearchError(String error) {
+    setState(() {
+      _errorMessage = error;
+      _currentWeather = {};
+      _hourlyWeather = [];
+      _dailyWeather = [];
     });
   }
 
@@ -228,70 +240,71 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           Column(
             children: [
               AppBar(
-              toolbarHeight: 50.0, // Set the height of the AppBar
-              title: custom.SearchBar(
-                onCitySelected: (cityName, state, country, latitude, longitude) {
-                _updateDisplayText(cityName, state, country, latitude, longitude);
-                },
-              ),
-              backgroundColor: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.9),
-              actions: [
-                GeolocationButton(
-                onLocationUpdated: (cityName, state, country, latitude, longitude) {
-                  _updateDisplayText(cityName, state, country, latitude, longitude);
-                },
+                toolbarHeight: 50.0,
+                title: custom.SearchBar(
+                  onCitySelected: (cityName, state, country, latitude, longitude) {
+                    _updateDisplayText(cityName, state, country, latitude, longitude);
+                  },
+                  onError: _handleSearchError,
                 ),
-              ],
-              ),
-              Expanded(
-              child: GestureDetector(
-                onTap: () => FocusScope.of(context).unfocus(),
-                child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : TabBarView(
-                    controller: _tabController,
-                    children: [
-                    CurrentlyTab(
-                      cityName: _cityName,
-                      stateCountry: _stateCountry,
-                      currentWeather: _currentWeather,
-                      errorMessage: _errorMessage,
-                      onTryAgain: _requestLocationOnStart,
-                      getWeatherIcon: _getWeatherIcon,
-                    ),
-                    TodayTab(
-                      cityName: _cityName,
-                      stateCountry: _stateCountry,
-                      hourlyWeather: _hourlyWeather,
-                      errorMessage: _errorMessage,
-                      onTryAgain: _requestLocationOnStart,
-                      getWeatherIcon: _getWeatherIcon,
-                    ),
-                    WeeklyTab(
-                      cityName: _cityName,
-                      stateCountry: _stateCountry,
-                      dailyWeather: _dailyWeather,
-                      errorMessage: _errorMessage,
-                      onTryAgain: _requestLocationOnStart,
-                      getWeatherIcon: _getWeatherIcon,
-                    ),
-                    ],
+                backgroundColor: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.9),
+                actions: [
+                  GeolocationButton(
+                    onLocationUpdated: (location, latitude, longitude) {
+                      _updateDisplayText(location, null, null, latitude, longitude);
+                    },
                   ),
-              ),
-              ),
-              BottomAppBar(
-              color: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.9),
-              child: IntrinsicHeight(
-              child: TabBar(
-                controller: _tabController,
-                labelStyle: TextStyle(fontSize: screenWidth * 0.035),
-                tabs: const [
-                Tab(icon: Icon(Icons.cloud), text: 'Currently'),
-                Tab(icon: Icon(Icons.today), text: 'Today'),
-                Tab(icon: Icon(Icons.calendar_view_week), text: 'Weekly'),
                 ],
               ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => FocusScope.of(context).unfocus(),
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : TabBarView(
+                          controller: _tabController,
+                          children: [
+                            CurrentlyTab(
+                              cityName: _cityName,
+                              stateCountry: _stateCountry,
+                              currentWeather: _currentWeather,
+                              errorMessage: _errorMessage,
+                              onTryAgain: _requestLocationOnStart,
+                              getWeatherIcon: _getWeatherIcon,
+                            ),
+                            TodayTab(
+                              cityName: _cityName,
+                              stateCountry: _stateCountry,
+                              hourlyWeather: _hourlyWeather,
+                              errorMessage: _errorMessage,
+                              onTryAgain: _requestLocationOnStart,
+                              getWeatherIcon: _getWeatherIcon,
+                            ),
+                            WeeklyTab(
+                              cityName: _cityName,
+                              stateCountry: _stateCountry,
+                              dailyWeather: _dailyWeather,
+                              errorMessage: _errorMessage,
+                              onTryAgain: _requestLocationOnStart,
+                              getWeatherIcon: _getWeatherIcon,
+                            ),
+                          ],
+                        ),
+                ),
               ),
+              BottomAppBar(
+                color: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.9),
+                child: IntrinsicHeight(
+                  child: TabBar(
+                    controller: _tabController,
+                    labelStyle: TextStyle(fontSize: screenWidth * 0.035),
+                    tabs: const [
+                      Tab(icon: Icon(Icons.cloud), text: 'Currently'),
+                      Tab(icon: Icon(Icons.today), text: 'Today'),
+                      Tab(icon: Icon(Icons.calendar_view_week), text: 'Weekly'),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
