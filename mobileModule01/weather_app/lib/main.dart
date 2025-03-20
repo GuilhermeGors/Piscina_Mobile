@@ -52,85 +52,78 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Weather App',
-          style: TextStyle(color: Colors.blueGrey),
+      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      title: Row(
+        children: [
+        Expanded(
+          child: TextField(
+          decoration: InputDecoration(
+            hintText: 'Search',
+            border: InputBorder.none,
+            hintStyle: const TextStyle(color: Colors.blueGrey),
+            prefixIcon: const Icon(Icons.search, color: Colors.blueGrey),
+          ),
+          style: const TextStyle(color: Colors.blueGrey),
+          onSubmitted: (text) {
+            _updateDisplayText(text);
+          },
+          ),
         ),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-            Container(
-            alignment: Alignment.center,
-            width: 200,
-            child: TextField(
-              decoration: InputDecoration(
-              hintText: 'Search',
-              border: InputBorder.none,
-              hintStyle: const TextStyle(color: Colors.blueGrey),
-              prefixIcon: const Icon(Icons.search, color: Colors.blueGrey),
-              ),
-              style: const TextStyle(color: Colors.blueGrey),
-              onSubmitted: (text) {
-              _updateDisplayText(text);
-              },
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.location_on),
-            onPressed: () {
-              _updateDisplayText('Geolocation');
-            },
-          ),
+        IconButton(
+          icon: const Icon(Icons.location_on),
+          onPressed: () {
+          _updateDisplayText('Geolocation');
+          },
+        ),
         ],
+      ),
       ),
       body: TabBarView(
-        controller: _tabController,
-        children: [
-          Center(
-            child: Text(
-              'Currently\n$_displayText',
-              textAlign: TextAlign.center,
-              style: const 
-                TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24
-                  ),
-            ),
+      controller: _tabController,
+      children: [
+        Center(
+        child: Text(
+          'Currently\n$_displayText',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 24,
           ),
-          Center(
-            child: Text(
-              'Today\n$_displayText',
-              textAlign: TextAlign.center,
-              style: const 
-                TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24
-                  ),
-            ),
+        ),
+        ),
+        Center(
+        child: Text(
+          'Today\n$_displayText',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 24,
           ),
-          Center(
-            child: Text(
-              'Weekly\n$_displayText',
-              textAlign: TextAlign.center,
-              style: const 
-                TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24
-                  ),              
-            ),
+        ),
+        ),
+        Center(
+        child: Text(
+          'Weekly\n$_displayText',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 24,
           ),
-        ],
+        ),
+        ),
+      ],
       ),
       bottomNavigationBar: BottomAppBar(
-        color: Theme.of(context).colorScheme.inversePrimary,
-        child: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.cloud), text: 'Currently'),
-            Tab(icon: Icon(Icons.today), text: 'Today'),
-            Tab(icon: Icon(Icons.calendar_view_week), text: 'Weekly'),
-          ],
-        ),
+      color: Theme.of(context).colorScheme.inversePrimary,
+      child: TabBar(
+        controller: _tabController,
+        tabs: const [
+        Tab(icon: Icon(Icons.cloud), text: 'Currently'),
+        Tab(icon: Icon(Icons.today), text: 'Today'),
+        Tab(icon: Icon(Icons.calendar_view_week), text: 'Weekly'),
+        ],
       ),
-    );
-  }
-}
+      ),
+        );
+      }
+    }
