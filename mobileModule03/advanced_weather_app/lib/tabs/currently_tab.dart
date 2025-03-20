@@ -5,30 +5,37 @@ class CurrentlyTab extends StatelessWidget {
   final String stateCountry;
   final Map<String, dynamic> currentWeather;
   final String? errorMessage;
+  final VoidCallback onTryAgain;
+  final IconData Function(String) getWeatherIcon;
 
   const CurrentlyTab({
-    Key? key,
+    super.key,
     required this.cityName,
     required this.stateCountry,
     required this.currentWeather,
     required this.errorMessage,
-  }) : super(key: key);
+    required this.onTryAgain,
+    required this.getWeatherIcon,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return SingleChildScrollView(
-      child: Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const SizedBox(height: 20),
+            SizedBox(height: screenHeight * 0.03),
             Text(
               cityName,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 28,
+                fontSize: screenWidth * 0.07,
                 color: Colors.blue,
               ),
             ),
@@ -36,83 +43,85 @@ class CurrentlyTab extends StatelessWidget {
               Text(
                 stateCountry,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 20, color: Colors.black54),
+                style: TextStyle(
+                  fontSize: screenWidth * 0.05,
+                  color: Colors.black54,
+                ),
               ),
-            const SizedBox(height: 20),
+            SizedBox(height: screenHeight * 0.05),
             if (errorMessage != null)
-              Text(
-                errorMessage!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.red, fontSize: 18),
+              Column(
+                children: [
+                  Text(
+                    errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: screenWidth * 0.045,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.015),
+                  ElevatedButton(
+                    onPressed: onTryAgain,
+                    child: Text(
+                      'Try Again',
+                      style: TextStyle(fontSize: screenWidth * 0.04),
+                    ),
+                  ),
+                ],
               )
             else if (currentWeather.isNotEmpty)
               Column(
                 children: [
                   Icon(
-                    _getWeatherIcon(currentWeather['weatherDescription']),
-                    size: 64,
+                    getWeatherIcon(currentWeather['weatherDescription']),
+                    size: screenWidth * 0.15,
                     color: Colors.blueAccent,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: screenHeight * 0.02),
                   Text(
                     '${currentWeather['temperature']}°C',
-                    style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.12,
+                      fontWeight: FontWeight.bold,
+                      color: (currentWeather['temperature'] as double) < 20 ? Colors.blue : Colors.red,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: screenHeight * 0.01),
                   Text(
                     currentWeather['weatherDescription'],
-                    style: const TextStyle(fontSize: 20, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.05,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: screenHeight * 0.02),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.air, size: 24),
-                      const SizedBox(width: 8),
+                      Icon(Icons.air, size: screenWidth * 0.06),
+                      SizedBox(width: screenWidth * 0.02),
                       Text(
-                        'Wind: ${currentWeather['windspeed']} km/h',
-                        style: const TextStyle(fontSize: 18),
+                        '${currentWeather['windspeed']} km/h',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.045,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
                 ],
               )
             else
-              const Text(
+              Text(
                 'No current weather data available',
-                style: TextStyle(fontSize: 18),
+                style: TextStyle(fontSize: screenWidth * 0.045),
               ),
-            const SizedBox(height: 20),
+            SizedBox(height: screenHeight * 0.03),
           ],
         ),
       ),
     );
-  }
-
-  IconData _getWeatherIcon(String description) {
-    final Map<String, IconData> weatherIcons = {
-      'clear sky': Icons.wb_sunny,
-      'mainly clear': Icons.wb_sunny,
-      'partly cloudy': Icons.wb_cloudy,
-      'overcast': Icons.cloud,
-      'fog': Icons.foggy,
-      'depositing rime fog': Icons.foggy,
-      'light drizzle': Icons.umbrella,
-      'moderate drizzle': Icons.umbrella,
-      'dense drizzle': Icons.umbrella,
-      'light rain': Icons.umbrella,
-      'moderate rain': Icons.umbrella,
-      'heavy rain': Icons.umbrella,
-      'light snow': Icons.ac_unit,
-      'moderate snow': Icons.ac_unit,
-      'heavy snow': Icons.ac_unit,
-      'light rain showers': Icons.grain,
-      'moderate rain showers': Icons.grain,
-      'heavy rain showers': Icons.grain,
-      'thunderstorm': Icons.flash_on,
-      'thunderstorm with light hail': Icons.flash_on,
-      'thunderstorm with heavy hail': Icons.flash_on,
-    };
-    return weatherIcons[description.toLowerCase()] ?? Icons.help_outline;
   }
 }

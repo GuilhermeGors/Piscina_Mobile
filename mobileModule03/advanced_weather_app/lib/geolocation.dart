@@ -23,7 +23,6 @@ class Location {
         _country = country;
 
   factory Location._fromGeolocation(Position position, Map<String, dynamic> geocodeData) {
-    // Extract city, state, and country from geocode data
     final address = geocodeData['address'] ?? {};
     String city = address['city'] ?? address['town'] ?? address['village'] ?? 'Unknown City';
     String? region = address['state'] ?? address['region'];
@@ -73,7 +72,6 @@ class Location {
     );
     debugPrint('Position fetched: ${position.latitude}, ${position.longitude}');
 
-    // Reverse geocode using Nominatim API
     final url = 'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json';
     debugPrint('Fetching geocode data from: $url');
     final response = await http.get(Uri.parse(url));
