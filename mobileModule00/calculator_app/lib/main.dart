@@ -150,7 +150,6 @@ class MyScreamState extends State<MyScream> {
                       String buttonText = buttons[index];
                       if (buttonText == 'C') {
                         _controller1.clear();
-                        _controller2.clear();
                       } else if (buttonText == 'AC') {
                         _controller1.clear();
                         _controller2.clear();
