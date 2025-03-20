@@ -63,22 +63,31 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  void _updateDisplayText(String text, double latitude, double longitude) {
-    setState(() {
-      // Validar latitude e longitude antes de prosseguir
-      if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
-        _displayText = text;
-        _errorMessage = null;
-        _fetchWeather(latitude, longitude);
+void _updateDisplayText(String text, double latitude, double longitude, {String? region, String? country, bool showCoordinates = false}) {
+  setState(() {
+    if (latitude == 0.0 && longitude == 0.0) {
+      _displayText = 'Weather App';
+      _errorMessage = text;
+      _currentWeather = {};
+      _hourlyWeather = [];
+      _dailyWeather = [];
+    } else if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+      if (showCoordinates) {
+        _displayText = 'Lat: $latitude, Lon: $longitude';
       } else {
-        _displayText = _displayText.isEmpty ? 'Weather App' : _displayText;
-        _errorMessage = 'Invalid coordinates received: $text';
-        _currentWeather = {};
-        _hourlyWeather = [];
-        _dailyWeather = [];
+        _displayText = '$text${region != null ? ', $region' : ''}${country != null ? ', $country' : ''}';
       }
-    });
-  }
+      _errorMessage = null;
+      _fetchWeather(latitude, longitude);
+    } else {
+      _displayText = _displayText.isEmpty ? 'Weather App' : _displayText;
+      _errorMessage = 'Invalid coordinates received: $text';
+      _currentWeather = {};
+      _hourlyWeather = [];
+      _dailyWeather = [];
+    }
+  });
+}
 
   void _handleSearchError(String error) {
     setState(() {
@@ -189,16 +198,16 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     return Scaffold(
       appBar: AppBar(
         title: custom.SearchBar(
-          onCitySelected: (cityName, latitude, longitude) {
-            _updateDisplayText('Weather in $cityName', latitude, longitude);
+          onCitySelected: (cityName, latitude, longitude, {region, country}) {
+            _updateDisplayText('Weather in $cityName', latitude, longitude, region: region, country: country);
           },
           onError: _handleSearchError,
         ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           GeolocationButton(
-            onLocationUpdated: (location, latitude, longitude) {
-              _updateDisplayText('Weather in $location', latitude, longitude);
+            onLocationUpdated: (location, latitude, longitude, {region, country}) {
+              _updateDisplayText('Weather in $location', latitude, longitude, region: region, country: country);
             },
           ),
         ],

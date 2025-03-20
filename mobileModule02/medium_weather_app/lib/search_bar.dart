@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class SearchBar extends StatefulWidget {
-  final Function(String, double, double) onCitySelected;
-  final Function(String) onError; // Novo callback para erros
+  final Function(String, double, double, {String? region, String? country}) onCitySelected;
+  final Function(String) onError;
 
   const SearchBar({required this.onCitySelected, required this.onError, super.key});
 
@@ -155,18 +155,18 @@ class SearchBarState extends State<SearchBar> {
                           final latitude = suggestion['latitude'] as double?;
                           final longitude = suggestion['longitude'] as double?;
 
-                          return ListTile(
-                            title: Text('$cityName${region.isNotEmpty ? ', $region' : ''}${country.isNotEmpty ? ', $country' : ''}'),
-                            onTap: () {
-                              if (latitude != null && longitude != null) {
-                                widget.onCitySelected(cityName, latitude, longitude);
-                                _controller.clear();
-                                _hideSuggestions();
-                              } else {
-                                debugPrint('Error: Missing coordinates');
-                              }
-                            },
-                          );
+                              return ListTile(
+      title: Text('$cityName${region.isNotEmpty ? ', $region' : ''}${country.isNotEmpty ? ', $country' : ''}'),
+      onTap: () {
+        if (latitude != null && longitude != null) {
+          widget.onCitySelected(cityName, latitude, longitude, region: region, country: country);
+          _controller.clear();
+          _hideSuggestions();
+        } else {
+          debugPrint('Error: Missing coordinates');
+        }
+      },
+    );
                         },
                       ),
           ),

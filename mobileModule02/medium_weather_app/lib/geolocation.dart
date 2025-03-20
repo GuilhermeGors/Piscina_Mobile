@@ -65,9 +65,8 @@ class Location {
     return Location._fromGeolocation(position);
   }
 }
-
 class GeolocationButton extends StatefulWidget {
-  final Function(String, double, double) onLocationUpdated;
+  final Function(String, double, double, {String? region, String? country}) onLocationUpdated;
 
   const GeolocationButton({required this.onLocationUpdated, super.key});
 
@@ -85,11 +84,10 @@ class GeolocationButtonState extends State<GeolocationButton> {
 
     try {
       final location = await Location.fetchGeolocation();
-      widget.onLocationUpdated(location.name, location.latitude, location.longitude);
+      widget.onLocationUpdated('', location.latitude, location.longitude);
     } catch (e) {
       debugPrint('Geolocation error: $e');
-      // Passar apenas a mensagem de erro, sem coordenadas inválidas
-      widget.onLocationUpdated('$e', 0.0, 0.0);
+      widget.onLocationUpdated('Error: $e', 0.0, 0.0);
     } finally {
       setState(() {
         _isLoading = false;
