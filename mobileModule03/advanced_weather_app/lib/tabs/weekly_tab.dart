@@ -87,7 +87,7 @@ class WeeklyTab extends StatelessWidget {
                 ? Column(
                     children: [
                       Expanded(
-                        flex: 3, // 60% do espaço disponível (aproximadamente 0.3 / (0.3 + 0.25))
+                        flex: 3,
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                           child: LineChart(
@@ -167,7 +167,7 @@ class WeeklyTab extends StatelessWidget {
                         ),
                       ),
                       Expanded(
-                        flex: 2, // 40% do espaço disponível (aproximadamente 0.25 / (0.3 + 0.25))
+                        flex: 2,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: dailyWeather.length,

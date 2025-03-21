@@ -292,7 +292,7 @@ class SearchBarState extends State<SearchBar> {
           },
           onSubmitted: (query) {
             if (query.isNotEmpty) {
-              _fetchCityCoordinates(query); // Busca direta ao pressionar Enter
+              _fetchCityCoordinates(query);
             }
           },
         ),

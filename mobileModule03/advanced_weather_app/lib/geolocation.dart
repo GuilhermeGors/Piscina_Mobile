@@ -25,7 +25,7 @@ class Location {
     return Location._(
       latitude: position.latitude,
       longitude: position.longitude,
-      name: 'Geolocation', // Temporário, será substituído pela geocodificação
+      name: 'Geolocation',
     );
   }
 
@@ -118,7 +118,7 @@ class GeolocationButtonState extends State<GeolocationButton> {
       widget.onLocationUpdated(location.name, location.region, location.country, location.latitude, location.longitude);
     } catch (e) {
       debugPrint('Geolocation error: $e');
-      widget.onLocationUpdated('$e', null, null, 0.0, 0.0); // Passa erro com coordenadas inválidas
+      widget.onLocationUpdated('$e', null, null, 0.0, 0.0);
     } finally {
       setState(() {
         _isLoading = false;
