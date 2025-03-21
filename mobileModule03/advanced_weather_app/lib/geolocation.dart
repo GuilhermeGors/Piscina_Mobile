@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class Location {
   final double _latitude;
@@ -24,7 +25,7 @@ class Location {
     return Location._(
       latitude: position.latitude,
       longitude: position.longitude,
-      name: 'Geolocation',
+      name: 'Geolocation', // Temporário, será substituído pela geocodificação
     );
   }
 
@@ -55,11 +56,10 @@ class Location {
       }
     }
 
-    // Se chegou aqui, a permissão é granted ou always
     debugPrint('Fetching position...');
     Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
-      forceAndroidLocationManager: true, // Evitar cache em Android
+      forceAndroidLocationManager: true,
     ).timeout(
       const Duration(seconds: 10),
       onTimeout: () {
@@ -68,12 +68,36 @@ class Location {
       },
     );
     debugPrint('Position fetched: ${position.latitude}, ${position.longitude}');
-    return Location._fromGeolocation(position);
+
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      if (placemarks.isNotEmpty) {
+        Placemark placemark = placemarks.first;
+        String city = placemark.locality ?? placemark.subLocality ?? 'Unknown City';
+        String? region = placemark.administrativeArea;
+        String? country = placemark.country;
+
+        debugPrint('Geocoded location: $city, $region, $country');
+        return Location._(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          name: city,
+          region: region,
+          country: country,
+        );
+      } else {
+        debugPrint('No placemarks found for coordinates.');
+        return Location._fromGeolocation(position);
+      }
+    } catch (e) {
+      debugPrint('Geocoding error: $e');
+      return Location._fromGeolocation(position);
+    }
   }
 }
 
 class GeolocationButton extends StatefulWidget {
-  final Function(String, double, double) onLocationUpdated;
+  final Function(String, String?, String?, double, double) onLocationUpdated;
 
   const GeolocationButton({required this.onLocationUpdated, super.key});
 
@@ -91,10 +115,10 @@ class GeolocationButtonState extends State<GeolocationButton> {
 
     try {
       final location = await Location.fetchGeolocation();
-      widget.onLocationUpdated(location.name, location.latitude, location.longitude);
+      widget.onLocationUpdated(location.name, location.region, location.country, location.latitude, location.longitude);
     } catch (e) {
       debugPrint('Geolocation error: $e');
-      widget.onLocationUpdated('$e', 0.0, 0.0); // Passa erro com coordenadas inválidas
+      widget.onLocationUpdated('$e', null, null, 0.0, 0.0); // Passa erro com coordenadas inválidas
     } finally {
       setState(() {
         _isLoading = false;

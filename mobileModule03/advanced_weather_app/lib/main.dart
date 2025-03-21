@@ -3,11 +3,10 @@ import 'search_bar.dart' as custom;
 import 'geolocation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:async';
-import 'dart:io';
+import 'package:fl_chart/fl_chart.dart';
 import 'tabs/currently_tab.dart';
-import 'tabs/today_tab.dart';
 import 'tabs/weekly_tab.dart';
+import 'tabs/today_tab.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,7 +36,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _cityName = 'Weather App';
+  String _cityName = '';
   String _stateCountry = '';
   Map<String, dynamic> _currentWeather = {};
   List<Map<String, dynamic>> _hourlyWeather = [];
@@ -53,27 +52,27 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   }
 
   Future<void> _requestLocationOnStart() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final location = await Location.fetchGeolocation().timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Geolocation request timed out.'),
-      );
+      final location = await Location.fetchGeolocation();
       _updateDisplayText(location.name, location.region, location.country, location.latitude, location.longitude);
-    } on TimeoutException catch (e) {
-      debugPrint('Timeout error in geolocation: $e');
-      setState(() => _errorMessage = 'No internet connection or slow response. Please check your network and try again.');
-    } on HttpException catch (e) {
-      debugPrint('HttpException in geolocation: $e');
-      setState(() => _errorMessage = 'No internet connection. Please check your network and try again.');
-    } on SocketException catch (e) {
-      debugPrint('SocketException in geolocation: $e');
-      setState(() => _errorMessage = 'No internet connection. Please check your network and try again.');
     } catch (e) {
       debugPrint('Initial location error: $e');
-      setState(() => _errorMessage = 'An error occurred: $e. You can still search by city name.');
+      setState(() {
+        _cityName = '';
+        _stateCountry = '';
+        _currentWeather = {};
+        _hourlyWeather = [];
+        _dailyWeather = [];
+        _errorMessage = 'Unable to fetch location: Please check your connection or try again.';
+      });
     } finally {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -86,40 +85,44 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   void _updateDisplayText(String cityName, String? state, String? country, double latitude, double longitude) {
     debugPrint('Updating display: city=$cityName, state=$state, country=$country, lat=$latitude, lon=$longitude');
     setState(() {
-      if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180 && latitude != 0.0 && longitude != 0.0) {
+      if (latitude != 0.0 && longitude != 0.0 && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
         _cityName = cityName;
-        List<String> parts = [];
-        if (state != null && state.isNotEmpty) parts.add(state);
-        if (country != null && country.isNotEmpty) parts.add(country);
-        _stateCountry = parts.isNotEmpty ? parts.join(', ') : '';
+        _stateCountry = state != null && country != null ? '$state, $country' : '';
         _errorMessage = null;
         _fetchWeather(latitude, longitude);
       } else {
-        _cityName = _cityName.isEmpty ? 'Weather App' : _cityName;
+        _cityName = '';
         _stateCountry = '';
-        _errorMessage = cityName.contains('Geolocation') ? cityName : 'Invalid coordinates received for "$cityName". Please try again.';
         _currentWeather = {};
         _hourlyWeather = [];
         _dailyWeather = [];
+        _errorMessage = 'Unable to fetch location: Please check your Permissions and try again.';
       }
-    });
-  }
-
-  void _handleSearchError(String error) {
-    setState(() {
-      _errorMessage = error;
-      _currentWeather = {};
-      _hourlyWeather = [];
-      _dailyWeather = [];
     });
   }
 
   String getWeatherDescription(int weatherCode) {
     const weatherDescriptions = {
-      0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast', 45: 'Fog', 48: 'Depositing rime fog',
-      51: 'Light drizzle', 53: 'Moderate drizzle', 55: 'Dense drizzle', 61: 'Light rain', 63: 'Moderate rain',
-      65: 'Heavy rain', 71: 'Light snow', 73: 'Moderate snow', 75: 'Heavy snow', 80: 'Light rain showers',
-      81: 'Moderate rain showers', 82: 'Heavy rain showers', 95: 'Thunderstorm', 96: 'Thunderstorm with light hail',
+      0: 'Clear sky',
+      1: 'Mainly clear',
+      2: 'Partly cloudy',
+      3: 'Overcast',
+      45: 'Fog',
+      48: 'Depositing rime fog',
+      51: 'Light drizzle',
+      53: 'Moderate drizzle',
+      55: 'Dense drizzle',
+      61: 'Light rain',
+      63: 'Moderate rain',
+      65: 'Heavy rain',
+      71: 'Light snow',
+      73: 'Moderate snow',
+      75: 'Heavy snow',
+      80: 'Light rain showers',
+      81: 'Moderate rain showers',
+      82: 'Heavy rain showers',
+      95: 'Thunderstorm',
+      96: 'Thunderstorm with light hail',
       99: 'Thunderstorm with heavy hail',
     };
     return weatherDescriptions[weatherCode] ?? 'Unknown';
@@ -129,25 +132,19 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     try {
       final url = 'https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current=temperature_2m,weathercode,windspeed_10m&hourly=temperature_2m,weathercode,windspeed_10m&daily=weathercode,temperature_2m_max,temperature_2m_min';
       debugPrint('Fetching weather with URL: $url');
-      final response = await http.get(Uri.parse(url)).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Weather API request timed out.'),
-      );
+      final response = await http.get(Uri.parse(url));
       debugPrint('Weather API response status: ${response.statusCode}');
       debugPrint('Weather API response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data == null || data['current'] == null || data['hourly'] == null || data['daily'] == null) {
-          throw Exception('Invalid response from weather API: missing required fields.');
-        }
 
         final currentWeather = data['current'];
         setState(() {
           _currentWeather = {
-            'temperature': currentWeather['temperature_2m'] ?? 0.0,
-            'weatherDescription': getWeatherDescription(currentWeather['weathercode'] ?? 0),
-            'windspeed': currentWeather['windspeed_10m'] ?? 0.0,
+            'temperature': currentWeather['temperature_2m'],
+            'weatherDescription': getWeatherDescription(currentWeather['weathercode']),
+            'windspeed': currentWeather['windspeed_10m'],
           };
           _errorMessage = null;
         });
@@ -157,13 +154,19 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         final temperatures = hourlyData['temperature_2m'] as List;
         final weatherCodes = hourlyData['weathercode'] as List;
         final windspeeds = hourlyData['windspeed_10m'] as List;
+
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
         setState(() {
-          _hourlyWeather = List.generate(times.length, (index) => {
-            'time': times[index], 'temperature': temperatures[index] ?? 0.0,
-            'weatherDescription': getWeatherDescription(weatherCodes[index] ?? 0), 'windspeed': windspeeds[index] ?? 0.0,
-          }).where((hourly) {
+          _hourlyWeather = List.generate(
+            times.length,
+            (index) => {
+              'time': times[index],
+              'temperature': temperatures[index],
+              'weatherDescription': getWeatherDescription(weatherCodes[index]),
+              'windspeed': windspeeds[index],
+            },
+          ).where((hourly) {
             final time = DateTime.parse(hourly['time']);
             return time.day == today.day && time.month == today.month && time.year == today.year;
           }).toList();
@@ -174,11 +177,17 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         final maxTemps = dailyData['temperature_2m_max'] as List;
         final minTemps = dailyData['temperature_2m_min'] as List;
         final dailyWeatherCodes = dailyData['weathercode'] as List;
+
         setState(() {
-          _dailyWeather = List.generate(dates.length, (index) => {
-            'date': dates[index], 'maxTemperature': maxTemps[index] ?? 0.0,
-            'minTemperature': minTemps[index] ?? 0.0, 'weatherDescription': getWeatherDescription(dailyWeatherCodes[index] ?? 0),
-          }).take(7).toList();
+          _dailyWeather = List.generate(
+            dates.length,
+            (index) => {
+              'date': dates[index],
+              'maxTemperature': maxTemps[index],
+              'minTemperature': minTemps[index],
+              'weatherDescription': getWeatherDescription(dailyWeatherCodes[index]),
+            },
+          );
         });
 
         debugPrint('Weather data fetched successfully');
@@ -187,34 +196,49 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         final errorReason = errorData['reason'] ?? 'Unknown error';
         debugPrint('Weather API failed with status: ${response.statusCode}');
         setState(() {
+          _cityName = '';
+          _stateCountry = '';
           _currentWeather = {};
           _hourlyWeather = [];
           _dailyWeather = [];
           _errorMessage = 'Failed to fetch weather: $errorReason (Status: ${response.statusCode}). Please try again.';
         });
       }
-    } on TimeoutException catch (e) {
-      debugPrint('Timeout error fetching weather: $e');
-      setState(() => _errorMessage = 'No internet connection or slow response. Please check your network and try again.');
-    } on http.ClientException catch (e) {
-      debugPrint('ClientException fetching weather: $e');
-      setState(() => _errorMessage = 'No internet connection. Please check your network and try again.');
-    } on SocketException catch (e) {
-      debugPrint('SocketException fetching weather: $e');
-      setState(() => _errorMessage = 'No internet connection. Please check your network and try again.');
     } catch (e) {
       debugPrint('Error fetching weather: $e');
-      setState(() => _errorMessage = 'Error fetching weather: $e. Please try again.');
+      setState(() {
+        _cityName = '';
+        _stateCountry = '';
+        _currentWeather = {};
+        _hourlyWeather = [];
+        _dailyWeather = [];
+        _errorMessage = 'No internet connection. Please check your network and try again.';
+      });
     }
   }
 
   final Map<String, IconData> _weatherIcons = {
-    'clear sky': Icons.wb_sunny, 'mainly clear': Icons.wb_sunny, 'partly cloudy': Icons.wb_cloudy, 'overcast': Icons.cloud,
-    'fog': Icons.foggy, 'depositing rime fog': Icons.foggy, 'light drizzle': Icons.umbrella, 'moderate drizzle': Icons.umbrella,
-    'dense drizzle': Icons.umbrella, 'light rain': Icons.umbrella, 'moderate rain': Icons.umbrella, 'heavy rain': Icons.umbrella,
-    'light snow': Icons.ac_unit, 'moderate snow': Icons.ac_unit, 'heavy snow': Icons.ac_unit, 'light rain showers': Icons.grain,
-    'moderate rain showers': Icons.grain, 'heavy rain showers': Icons.grain, 'thunderstorm': Icons.flash_on,
-    'thunderstorm with light hail': Icons.flash_on, 'thunderstorm with heavy hail': Icons.flash_on,
+    'clear sky': Icons.wb_sunny,
+    'mainly clear': Icons.wb_sunny,
+    'partly cloudy': Icons.wb_cloudy,
+    'overcast': Icons.cloud,
+    'fog': Icons.foggy,
+    'depositing rime fog': Icons.foggy,
+    'light drizzle': Icons.umbrella,
+    'moderate drizzle': Icons.umbrella,
+    'dense drizzle': Icons.umbrella,
+    'light rain': Icons.umbrella,
+    'moderate rain': Icons.umbrella,
+    'heavy rain': Icons.umbrella,
+    'light snow': Icons.ac_unit,
+    'moderate snow': Icons.ac_unit,
+    'heavy snow': Icons.ac_unit,
+    'light rain showers': Icons.grain,
+    'moderate rain showers': Icons.grain,
+    'heavy rain showers': Icons.grain,
+    'thunderstorm': Icons.flash_on,
+    'thunderstorm with light hail': Icons.flash_on,
+    'thunderstorm with heavy hail': Icons.flash_on,
   };
 
   IconData _getWeatherIcon(String description) {
@@ -223,9 +247,8 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           Container(
@@ -237,28 +260,35 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
               ),
             ),
           ),
-          Column(
-            children: [
-              AppBar(
-                toolbarHeight: 50.0,
-                title: custom.SearchBar(
-                  onCitySelected: (cityName, state, country, latitude, longitude) {
-                    _updateDisplayText(cityName, state, country, latitude, longitude);
-                  },
-                  onError: _handleSearchError,
-                ),
-                backgroundColor: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.9),
-                actions: [
-                  GeolocationButton(
-                    onLocationUpdated: (location, latitude, longitude) {
-                      _updateDisplayText(location, null, null, latitude, longitude);
+          SafeArea(
+            child: Column(
+              children: [
+                AppBar(
+                  title: custom.SearchBar(
+                    onCitySelected: (cityName, state, country, latitude, longitude) {
+                      _updateDisplayText(cityName, state, country, latitude, longitude);
+                    },
+                    onError: (errorMessage) {
+                      setState(() {
+                        _cityName = '';
+                        _stateCountry = '';
+                        _currentWeather = {};
+                        _hourlyWeather = [];
+                        _dailyWeather = [];
+                        _errorMessage = errorMessage;
+                      });
                     },
                   ),
-                ],
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => FocusScope.of(context).unfocus(),
+                  backgroundColor: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.9),
+                  actions: [
+                    GeolocationButton(
+                      onLocationUpdated: (cityName, state, country, latitude, longitude) {
+                        _updateDisplayText(cityName, state, country, latitude, longitude);
+                      },
+                    ),
+                  ],
+                ),
+                Expanded(
                   child: _isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : TabBarView(
@@ -291,24 +321,21 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                           ],
                         ),
                 ),
-              ),
-              BottomAppBar(
-                color: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.9),
-                child: IntrinsicHeight(
-                  child: TabBar(
-                    controller: _tabController,
-                    labelStyle: TextStyle(fontSize: screenWidth * 0.035),
-                    tabs: const [
-                      Tab(icon: Icon(Icons.cloud), text: 'Currently'),
-                      Tab(icon: Icon(Icons.today), text: 'Today'),
-                      Tab(icon: Icon(Icons.calendar_view_week), text: 'Weekly'),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
+      ),
+      bottomNavigationBar: BottomAppBar(
+        color: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.9),
+        child: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.cloud), text: 'Currently'),
+            Tab(icon: Icon(Icons.today), text: 'Today'),
+            Tab(icon: Icon(Icons.calendar_view_week), text: 'Weekly'),
+          ],
+        ),
       ),
     );
   }

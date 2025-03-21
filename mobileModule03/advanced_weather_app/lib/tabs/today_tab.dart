@@ -80,8 +80,8 @@ class TodayTab extends StatelessWidget {
             child: hourlyWeather.isNotEmpty
                 ? Column(
                     children: [
-                      SizedBox(
-                        height: screenHeight * 0.3,
+                      Expanded(
+                        flex: 3,
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                           child: LineChart(
@@ -151,8 +151,8 @@ class TodayTab extends StatelessWidget {
                           ),
                         ),
                       ),
-                      SizedBox(
-                        height: screenHeight * 0.25,
+                      Expanded(
+                        flex: 2, // 40% do espaço disponível
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: hourlyWeather.length,

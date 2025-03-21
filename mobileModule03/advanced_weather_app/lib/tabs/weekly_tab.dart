@@ -86,8 +86,8 @@ class WeeklyTab extends StatelessWidget {
             child: dailyWeather.isNotEmpty
                 ? Column(
                     children: [
-                      SizedBox(
-                        height: screenHeight * 0.30,
+                      Expanded(
+                        flex: 3, // 60% do espaço disponível (aproximadamente 0.3 / (0.3 + 0.25))
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                           child: LineChart(
@@ -102,7 +102,7 @@ class WeeklyTab extends StatelessWidget {
                                 show: true,
                                 rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                                 topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                bottomTitles: AxisTitles( 
+                                bottomTitles: AxisTitles(
                                   sideTitles: SideTitles(
                                     showTitles: true,
                                     reservedSize: screenWidth * 0.1,
@@ -166,8 +166,8 @@ class WeeklyTab extends StatelessWidget {
                           ),
                         ),
                       ),
-                      SizedBox(
-                        height: screenHeight * 0.25,
+                      Expanded(
+                        flex: 2, // 40% do espaço disponível (aproximadamente 0.25 / (0.3 + 0.25))
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: dailyWeather.length,
@@ -178,22 +178,30 @@ class WeeklyTab extends StatelessWidget {
                             final maxTemperature = daily['maxTemperature'] as double;
                             final minTemperature = daily['minTemperature'] as double;
                             final weatherDescription = daily['weatherDescription'] as String;
+                            final windspeed = daily['windspeed'] as double?;
                             return Container(
                               width: screenWidth * 0.3,
                               margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(dayOfWeek, style: TextStyle(fontWeight: FontWeight.bold, fontSize: screenWidth * 0.045, color: Colors.black87)),
-                                    SizedBox(height: screenHeight * 0.015),
-                                    Icon(getWeatherIcon(weatherDescription), size: screenWidth * 0.1, color: Colors.blueAccent),
-                                    SizedBox(height: screenHeight * 0.01),
-                                    Text('Max: $maxTemperature°C', style: TextStyle(fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold, color: maxTemperature < 20 ? Colors.blue : Colors.red)),
-                                    Text('Min: $minTemperature°C', style: TextStyle(fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold, color: minTemperature < 20 ? Colors.blue : Colors.red)),
-                                    Text(weatherDescription, style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold, color: Colors.black87), textAlign: TextAlign.center),
-                                  ],
-                                ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(dayOfWeek, style: TextStyle(fontWeight: FontWeight.bold, fontSize: screenWidth * 0.045)),
+                                  SizedBox(height: screenHeight * 0.015),
+                                  Icon(getWeatherIcon(weatherDescription), size: screenWidth * 0.1, color: Colors.blueAccent),
+                                  SizedBox(height: screenHeight * 0.01),
+                                  Text('Max: $maxTemperature°C', style: TextStyle(fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold, color: maxTemperature < 20 ? Colors.blue : Colors.red)),
+                                  Text('Min: $minTemperature°C', style: TextStyle(fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold, color: minTemperature < 20 ? Colors.blue : Colors.red)),
+                                  Text(weatherDescription, style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold, color: Colors.black87), textAlign: TextAlign.center),
+                                  if (windspeed != null)
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.air, size: screenWidth * 0.04, color: Colors.grey),
+                                        SizedBox(width: screenWidth * 0.01),
+                                        Text('$windspeed km/h', style: TextStyle(fontSize: screenWidth * 0.03, fontWeight: FontWeight.bold, color: Colors.black)),
+                                      ],
+                                    ),
+                                ],
                               ),
                             );
                           },

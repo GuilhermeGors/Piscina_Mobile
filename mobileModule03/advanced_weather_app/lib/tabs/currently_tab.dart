@@ -28,23 +28,23 @@ class CurrentlyTab extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-            SizedBox(height: screenHeight * 0.03),
+          children: [
+            SizedBox(height: screenHeight * 0.02),
             Text(
               'Currently',
               textAlign: TextAlign.center,
               style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: screenWidth * 0.06,
+                fontWeight: FontWeight.bold,
+                fontSize: screenWidth * 0.06,
               ),
             ),
             Text(
               cityName,
               textAlign: TextAlign.center,
               style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: screenWidth * 0.07,
-              color: Colors.blue,
+                fontWeight: FontWeight.bold,
+                fontSize: screenWidth * 0.07,
+                color: Colors.blue,
               ),
             ),
             if (stateCountry.isNotEmpty)
