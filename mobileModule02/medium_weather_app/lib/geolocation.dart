@@ -14,11 +14,11 @@ class Location {
     required String name,
     String? region,
     String? country,
-  })  : _latitude = latitude,
-        _longitude = longitude,
-        _name = name,
-        _region = region,
-        _country = country;
+  }) : _latitude = latitude,
+       _longitude = longitude,
+       _name = name,
+       _region = region,
+       _country = country;
 
   factory Location._fromGeolocation(Position position) {
     return Location._(
@@ -48,7 +48,8 @@ class Location {
       debugPrint('Permission denied, requesting...');
       permission = await Geolocator.requestPermission();
       debugPrint('Permission result: $permission');
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         throw 'Geolocation is not available, location permissions are denied';
       }
     }
@@ -65,8 +66,17 @@ class Location {
     return Location._fromGeolocation(position);
   }
 }
+
 class GeolocationButton extends StatefulWidget {
-  final Function(String, double, double, {String? region, String? country}) onLocationUpdated;
+  final Function(
+    String,
+    double,
+    double, {
+    String? region,
+    String? country,
+    bool showCoordinates,
+  })
+  onLocationUpdated;
 
   const GeolocationButton({required this.onLocationUpdated, super.key});
 
@@ -84,7 +94,13 @@ class GeolocationButtonState extends State<GeolocationButton> {
 
     try {
       final location = await Location.fetchGeolocation();
-      widget.onLocationUpdated('', location.latitude, location.longitude);
+      // Passamos as coordenadas e indicamos que queremos mostrar as coordenadas
+      widget.onLocationUpdated(
+        'Current Location',
+        location.latitude,
+        location.longitude,
+        showCoordinates: true, // Adicionamos esse parâmetro opcional
+      );
     } catch (e) {
       debugPrint('Geolocation error: $e');
       widget.onLocationUpdated('Error: $e', 0.0, 0.0);
@@ -98,11 +114,12 @@ class GeolocationButtonState extends State<GeolocationButton> {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: _isLoading
-          ? const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            )
-          : const Icon(Icons.location_on),
+      icon:
+          _isLoading
+              ? const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              )
+              : const Icon(Icons.location_on),
       onPressed: _getLocation,
     );
   }

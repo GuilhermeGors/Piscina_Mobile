@@ -30,7 +30,8 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _displayText = 'Weather App';
   Map<String, dynamic> _currentWeather = {};
@@ -48,7 +49,11 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   Future<void> _fetchInitialLocation() async {
     try {
       final location = await Location.fetchGeolocation();
-      _updateDisplayText('Weather in ${location.name}', location.latitude, location.longitude);
+      _updateDisplayText(
+        'Weather in ${location.name}',
+        location.latitude,
+        location.longitude,
+      );
     } catch (e) {
       debugPrint('Initial geolocation error: $e');
       setState(() {
@@ -63,31 +68,42 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     super.dispose();
   }
 
-void _updateDisplayText(String text, double latitude, double longitude, {String? region, String? country, bool showCoordinates = false}) {
-  setState(() {
-    if (latitude == 0.0 && longitude == 0.0) {
-      _displayText = 'Weather App';
-      _errorMessage = text;
-      _currentWeather = {};
-      _hourlyWeather = [];
-      _dailyWeather = [];
-    } else if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
-      if (showCoordinates) {
-        _displayText = 'Lat: $latitude, Lon: $longitude';
+  void _updateDisplayText(
+    String text,
+    double latitude,
+    double longitude, {
+    String? region,
+    String? country,
+    bool showCoordinates = false,
+  }) {
+    setState(() {
+      if (latitude == 0.0 && longitude == 0.0) {
+        _displayText = 'Weather App';
+        _errorMessage = text;
+        _currentWeather = {};
+        _hourlyWeather = [];
+        _dailyWeather = [];
+      } else if (latitude >= -90 &&
+          latitude <= 90 &&
+          longitude >= -180 &&
+          longitude <= 180) {
+        if (showCoordinates) {
+          _displayText = 'Lat: $latitude, Lon: $longitude';
+        } else {
+          _displayText =
+              '$text${region != null ? ', $region' : ''}${country != null ? ', $country' : ''}';
+        }
+        _errorMessage = null;
+        _fetchWeather(latitude, longitude);
       } else {
-        _displayText = '$text${region != null ? ', $region' : ''}${country != null ? ', $country' : ''}';
+        _displayText = _displayText.isEmpty ? 'Weather App' : _displayText;
+        _errorMessage = 'Invalid coordinates received: $text';
+        _currentWeather = {};
+        _hourlyWeather = [];
+        _dailyWeather = [];
       }
-      _errorMessage = null;
-      _fetchWeather(latitude, longitude);
-    } else {
-      _displayText = _displayText.isEmpty ? 'Weather App' : _displayText;
-      _errorMessage = 'Invalid coordinates received: $text';
-      _currentWeather = {};
-      _hourlyWeather = [];
-      _dailyWeather = [];
-    }
-  });
-}
+    });
+  }
 
   void _handleSearchError(String error) {
     setState(() {
@@ -100,10 +116,26 @@ void _updateDisplayText(String text, double latitude, double longitude, {String?
 
   String getWeatherDescription(int weatherCode) {
     const weatherDescriptions = {
-      0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast', 45: 'Fog', 48: 'Depositing rime fog',
-      51: 'Light drizzle', 53: 'Moderate drizzle', 55: 'Dense drizzle', 61: 'Light rain', 63: 'Moderate rain',
-      65: 'Heavy rain', 71: 'Light snow', 73: 'Moderate snow', 75: 'Heavy snow', 80: 'Light rain showers',
-      81: 'Moderate rain showers', 82: 'Heavy rain showers', 95: 'Thunderstorm', 96: 'Thunderstorm with light hail',
+      0: 'Clear sky',
+      1: 'Mainly clear',
+      2: 'Partly cloudy',
+      3: 'Overcast',
+      45: 'Fog',
+      48: 'Depositing rime fog',
+      51: 'Light drizzle',
+      53: 'Moderate drizzle',
+      55: 'Dense drizzle',
+      61: 'Light rain',
+      63: 'Moderate rain',
+      65: 'Heavy rain',
+      71: 'Light snow',
+      73: 'Moderate snow',
+      75: 'Heavy snow',
+      80: 'Light rain showers',
+      81: 'Moderate rain showers',
+      82: 'Heavy rain showers',
+      95: 'Thunderstorm',
+      96: 'Thunderstorm with light hail',
       99: 'Thunderstorm with heavy hail',
     };
     return weatherDescriptions[weatherCode] ?? 'Unknown';
@@ -112,7 +144,8 @@ void _updateDisplayText(String text, double latitude, double longitude, {String?
   void _fetchWeather(double latitude, double longitude) async {
     try {
       debugPrint('Fetching weather for lat: $latitude, lon: $longitude');
-      final url = 'https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current=temperature_2m,weathercode,windspeed_10m&hourly=temperature_2m,weathercode,windspeed_10m&daily=weathercode,temperature_2m_max,temperature_2m_min';
+      final url =
+          'https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current=temperature_2m,weathercode,windspeed_10m&hourly=temperature_2m,weathercode,windspeed_10m&daily=weathercode,temperature_2m_max,temperature_2m_min';
       debugPrint('Weather API URL: $url');
       final response = await http.get(Uri.parse(url));
       debugPrint('Weather API response status: ${response.statusCode}');
@@ -125,7 +158,9 @@ void _updateDisplayText(String text, double latitude, double longitude, {String?
         setState(() {
           _currentWeather = {
             'temperature': currentWeather['temperature_2m'],
-            'weatherDescription': getWeatherDescription(currentWeather['weathercode']),
+            'weatherDescription': getWeatherDescription(
+              currentWeather['weathercode'],
+            ),
             'windspeed': currentWeather['windspeed_10m'],
           };
           _errorMessage = null;
@@ -140,18 +175,23 @@ void _updateDisplayText(String text, double latitude, double longitude, {String?
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
         setState(() {
-          _hourlyWeather = List.generate(
-            times.length,
-            (index) => {
-              'time': times[index],
-              'temperature': temperatures[index],
-              'weatherDescription': getWeatherDescription(weatherCodes[index]),
-              'windspeed': windspeeds[index],
-            },
-          ).where((hourly) {
-            final time = DateTime.parse(hourly['time']);
-            return time.day == today.day && time.month == today.month && time.year == today.year;
-          }).toList();
+          _hourlyWeather =
+              List.generate(
+                times.length,
+                (index) => {
+                  'time': times[index],
+                  'temperature': temperatures[index],
+                  'weatherDescription': getWeatherDescription(
+                    weatherCodes[index],
+                  ),
+                  'windspeed': windspeeds[index],
+                },
+              ).where((hourly) {
+                final time = DateTime.parse(hourly['time']);
+                return time.day == today.day &&
+                    time.month == today.month &&
+                    time.year == today.year;
+              }).toList();
         });
 
         final dailyData = data['daily'];
@@ -167,7 +207,9 @@ void _updateDisplayText(String text, double latitude, double longitude, {String?
               'date': dates[index],
               'maxTemperature': maxTemps[index],
               'minTemperature': minTemps[index],
-              'weatherDescription': getWeatherDescription(dailyWeatherCodes[index]),
+              'weatherDescription': getWeatherDescription(
+                dailyWeatherCodes[index],
+              ),
             },
           );
         });
@@ -188,7 +230,8 @@ void _updateDisplayText(String text, double latitude, double longitude, {String?
         _currentWeather = {};
         _hourlyWeather = [];
         _dailyWeather = [];
-        _errorMessage = 'Error fetching weather. Please check your connection or try again.';
+        _errorMessage =
+            'Error fetching weather. Please check your connection or try again.';
       });
     }
   }
@@ -199,15 +242,36 @@ void _updateDisplayText(String text, double latitude, double longitude, {String?
       appBar: AppBar(
         title: custom.SearchBar(
           onCitySelected: (cityName, latitude, longitude, {region, country}) {
-            _updateDisplayText('Weather in $cityName', latitude, longitude, region: region, country: country);
+            _updateDisplayText(
+              'Weather in $cityName',
+              latitude,
+              longitude,
+              region: region,
+              country: country,
+            );
           },
           onError: _handleSearchError,
         ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           GeolocationButton(
-            onLocationUpdated: (location, latitude, longitude, {region, country}) {
-              _updateDisplayText('Weather in $location', latitude, longitude, region: region, country: country);
+            onLocationUpdated: (
+              location,
+              latitude,
+              longitude, {
+              region,
+              country,
+              showCoordinates = false,
+            }) {
+              _updateDisplayText(
+                'Weather in $location',
+                latitude,
+                longitude,
+                region: region,
+                country: country,
+                showCoordinates:
+                    showCoordinates, // Passamos o parâmetro showCoordinates
+              );
             },
           ),
         ],
@@ -236,10 +300,7 @@ void _updateDisplayText(String text, double latitude, double longitude, {String?
                     Text(
                       _errorMessage!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 18,
-                      ),
+                      style: const TextStyle(color: Colors.red, fontSize: 18),
                     )
                   else if (_currentWeather.isNotEmpty)
                     Column(
@@ -282,40 +343,44 @@ void _updateDisplayText(String text, double latitude, double longitude, {String?
                     Text(
                       _errorMessage!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 18,
-                      ),
+                      style: const TextStyle(color: Colors.red, fontSize: 18),
                     )
                   else
                     Expanded(
-                      child: _hourlyWeather.isNotEmpty
-                          ? ListView.builder(
-                              itemCount: _hourlyWeather.length,
-                              itemBuilder: (context, index) {
-                                final hourly = _hourlyWeather[index];
-                                final time = hourly['time'] as String;
-                                final hour = time.split('T')[1].substring(0, 5);
-                                final temperature = hourly['temperature'] as double;
-                                final weatherDescription = hourly['weatherDescription'] as String;
-                                final windspeed = hourly['windspeed'] as double;
-                                return ListTile(
-                                  title: Text('Hour: $hour'),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Temperature: $temperature°C'),
-                                      Text('Weather: $weatherDescription'),
-                                      Text('Wind Speed: $windspeed km/h'),
-                                    ],
-                                  ),
-                                );
-                              },
-                            )
-                          : const Text(
-                              'No hourly weather data available',
-                              style: TextStyle(fontSize: 18),
-                            ),
+                      child:
+                          _hourlyWeather.isNotEmpty
+                              ? ListView.builder(
+                                itemCount: _hourlyWeather.length,
+                                itemBuilder: (context, index) {
+                                  final hourly = _hourlyWeather[index];
+                                  final time = hourly['time'] as String;
+                                  final hour = time
+                                      .split('T')[1]
+                                      .substring(0, 5);
+                                  final temperature =
+                                      hourly['temperature'] as double;
+                                  final weatherDescription =
+                                      hourly['weatherDescription'] as String;
+                                  final windspeed =
+                                      hourly['windspeed'] as double;
+                                  return ListTile(
+                                    title: Text('Hour: $hour'),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Temperature: $temperature°C'),
+                                        Text('Weather: $weatherDescription'),
+                                        Text('Wind Speed: $windspeed km/h'),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              )
+                              : const Text(
+                                'No hourly weather data available',
+                                style: TextStyle(fontSize: 18),
+                              ),
                     ),
                 ],
               ),
@@ -336,39 +401,45 @@ void _updateDisplayText(String text, double latitude, double longitude, {String?
                     Text(
                       _errorMessage!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 18,
-                      ),
+                      style: const TextStyle(color: Colors.red, fontSize: 18),
                     )
                   else
                     Expanded(
-                      child: _dailyWeather.isNotEmpty
-                          ? ListView.builder(
-                              itemCount: _dailyWeather.length,
-                              itemBuilder: (context, index) {
-                                final daily = _dailyWeather[index];
-                                final date = daily['date'] as String;
-                                final maxTemperature = daily['maxTemperature'] as double;
-                                final minTemperature = daily['minTemperature'] as double;
-                                final weatherDescription = daily['weatherDescription'] as String;
-                                return ListTile(
-                                  title: Text('Date: $date'),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Max Temperature: $maxTemperature°C'),
-                                      Text('Min Temperature: $minTemperature°C'),
-                                      Text('Weather: $weatherDescription'),
-                                    ],
-                                  ),
-                                );
-                              },
-                            )
-                          : const Text(
-                              'No weekly weather data available',
-                              style: TextStyle(fontSize: 18),
-                            ),
+                      child:
+                          _dailyWeather.isNotEmpty
+                              ? ListView.builder(
+                                itemCount: _dailyWeather.length,
+                                itemBuilder: (context, index) {
+                                  final daily = _dailyWeather[index];
+                                  final date = daily['date'] as String;
+                                  final maxTemperature =
+                                      daily['maxTemperature'] as double;
+                                  final minTemperature =
+                                      daily['minTemperature'] as double;
+                                  final weatherDescription =
+                                      daily['weatherDescription'] as String;
+                                  return ListTile(
+                                    title: Text('Date: $date'),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Max Temperature: $maxTemperature°C',
+                                        ),
+                                        Text(
+                                          'Min Temperature: $minTemperature°C',
+                                        ),
+                                        Text('Weather: $weatherDescription'),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              )
+                              : const Text(
+                                'No weekly weather data available',
+                                style: TextStyle(fontSize: 18),
+                              ),
                     ),
                 ],
               ),
