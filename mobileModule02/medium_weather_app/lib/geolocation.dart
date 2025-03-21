@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class Location {
   final double _latitude;
@@ -20,11 +23,18 @@ class Location {
        _region = region,
        _country = country;
 
-  factory Location._fromGeolocation(Position position) {
+  factory Location._fromGeolocation(
+    Position position, {
+    required String name,
+    String? region,
+    String? country,
+  }) {
     return Location._(
       latitude: position.latitude,
       longitude: position.longitude,
-      name: 'Geolocation',
+      name: name,
+      region: region,
+      country: country,
     );
   }
 
@@ -63,7 +73,46 @@ class Location {
       },
     );
     debugPrint('Position fetched: ${position.latitude}, ${position.longitude}');
-    return Location._fromGeolocation(position);
+
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult == ConnectivityResult.none) {
+      debugPrint('No internet connection available.');
+      return Location._fromGeolocation(
+        position,
+        name: 'Current Location (Offline)',
+      );
+    }
+    try {
+      final url =
+          'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json';
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        String city =
+            data['address']['city'] ??
+            data['address']['town'] ??
+            data['address']['village'] ??
+            'Unknown City';
+        String? region = data['address']['state'] ?? data['address']['region'];
+        String? country = data['address']['country'];
+
+        return Location._fromGeolocation(
+          position,
+          name: city,
+          region: region,
+          country: country,
+        );
+      } else {
+        debugPrint('Reverse geocoding failed: ${response.statusCode}');
+        return Location._fromGeolocation(position, name: 'Unknown Location');
+      }
+    } catch (e) {
+      debugPrint('Geolocation error during reverse geocoding: $e');
+      return Location._fromGeolocation(
+        position,
+        name: 'Current Location (Offline)',
+      );
+    }
   }
 }
 
@@ -94,12 +143,12 @@ class GeolocationButtonState extends State<GeolocationButton> {
 
     try {
       final location = await Location.fetchGeolocation();
-      // Passamos as coordenadas e indicamos que queremos mostrar as coordenadas
       widget.onLocationUpdated(
-        'Current Location',
+        location.name,
         location.latitude,
         location.longitude,
-        showCoordinates: true, // Adicionamos esse parâmetro opcional
+        region: location.region,
+        country: location.country,
       );
     } catch (e) {
       debugPrint('Geolocation error: $e');

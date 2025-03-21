@@ -53,6 +53,8 @@ class _MyHomePageState extends State<MyHomePage>
         'Weather in ${location.name}',
         location.latitude,
         location.longitude,
+        region: location.region,
+        country: location.country,
       );
     } catch (e) {
       debugPrint('Initial geolocation error: $e');
@@ -87,12 +89,8 @@ class _MyHomePageState extends State<MyHomePage>
           latitude <= 90 &&
           longitude >= -180 &&
           longitude <= 180) {
-        if (showCoordinates) {
-          _displayText = 'Lat: $latitude, Lon: $longitude';
-        } else {
-          _displayText =
-              '$text${region != null ? ', $region' : ''}${country != null ? ', $country' : ''}';
-        }
+        _displayText =
+            '$text${region != null ? ', $region' : ''}${country != null ? ', $country' : ''}';
         _errorMessage = null;
         _fetchWeather(latitude, longitude);
       } else {
@@ -154,23 +152,36 @@ class _MyHomePageState extends State<MyHomePage>
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
+        if (data['current'] == null ||
+            data['hourly'] == null ||
+            data['daily'] == null) {
+          throw 'Incomplete weather data received from API';
+        }
+
         final currentWeather = data['current'];
         setState(() {
           _currentWeather = {
-            'temperature': currentWeather['temperature_2m'],
+            'temperature': currentWeather['temperature_2m']?.toDouble() ?? 0.0,
             'weatherDescription': getWeatherDescription(
-              currentWeather['weathercode'],
+              currentWeather['weathercode'] ?? 0,
             ),
-            'windspeed': currentWeather['windspeed_10m'],
+            'windspeed': currentWeather['windspeed_10m']?.toDouble() ?? 0.0,
           };
           _errorMessage = null;
         });
 
         final hourlyData = data['hourly'];
-        final times = hourlyData['time'] as List;
-        final temperatures = hourlyData['temperature_2m'] as List;
-        final weatherCodes = hourlyData['weathercode'] as List;
-        final windspeeds = hourlyData['windspeed_10m'] as List;
+        final times = hourlyData['time'] as List?;
+        final temperatures = hourlyData['temperature_2m'] as List?;
+        final weatherCodes = hourlyData['weathercode'] as List?;
+        final windspeeds = hourlyData['windspeed_10m'] as List?;
+
+        if (times == null ||
+            temperatures == null ||
+            weatherCodes == null ||
+            windspeeds == null) {
+          throw 'Missing hourly weather data';
+        }
 
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
@@ -180,11 +191,11 @@ class _MyHomePageState extends State<MyHomePage>
                 times.length,
                 (index) => {
                   'time': times[index],
-                  'temperature': temperatures[index],
+                  'temperature': temperatures[index]?.toDouble() ?? 0.0,
                   'weatherDescription': getWeatherDescription(
-                    weatherCodes[index],
+                    weatherCodes[index] ?? 0,
                   ),
-                  'windspeed': windspeeds[index],
+                  'windspeed': windspeeds[index]?.toDouble() ?? 0.0,
                 },
               ).where((hourly) {
                 final time = DateTime.parse(hourly['time']);
@@ -195,20 +206,27 @@ class _MyHomePageState extends State<MyHomePage>
         });
 
         final dailyData = data['daily'];
-        final dates = dailyData['time'] as List;
-        final maxTemps = dailyData['temperature_2m_max'] as List;
-        final minTemps = dailyData['temperature_2m_min'] as List;
-        final dailyWeatherCodes = data['daily']['weathercode'] as List;
+        final dates = dailyData['time'] as List?;
+        final maxTemps = dailyData['temperature_2m_max'] as List?;
+        final minTemps = dailyData['temperature_2m_min'] as List?;
+        final dailyWeatherCodes = dailyData['weathercode'] as List?;
+
+        if (dates == null ||
+            maxTemps == null ||
+            minTemps == null ||
+            dailyWeatherCodes == null) {
+          throw 'Missing daily weather data';
+        }
 
         setState(() {
           _dailyWeather = List.generate(
             dates.length,
             (index) => {
               'date': dates[index],
-              'maxTemperature': maxTemps[index],
-              'minTemperature': minTemps[index],
+              'maxTemperature': maxTemps[index]?.toDouble() ?? 0.0,
+              'minTemperature': minTemps[index]?.toDouble() ?? 0.0,
               'weatherDescription': getWeatherDescription(
-                dailyWeatherCodes[index],
+                dailyWeatherCodes[index] ?? 0,
               ),
             },
           );
@@ -221,7 +239,8 @@ class _MyHomePageState extends State<MyHomePage>
           _currentWeather = {};
           _hourlyWeather = [];
           _dailyWeather = [];
-          _errorMessage = 'Failed to fetch weather data. Please try again.';
+          _errorMessage =
+              'Failed to fetch weather data. Status: ${response.statusCode}';
         });
       }
     } catch (e) {
@@ -230,8 +249,7 @@ class _MyHomePageState extends State<MyHomePage>
         _currentWeather = {};
         _hourlyWeather = [];
         _dailyWeather = [];
-        _errorMessage =
-            'Error fetching weather. Please check your connection or try again.';
+        _errorMessage = 'Error fetching weather: $e';
       });
     }
   }
@@ -269,8 +287,6 @@ class _MyHomePageState extends State<MyHomePage>
                 longitude,
                 region: region,
                 country: country,
-                showCoordinates:
-                    showCoordinates, // Passamos o parâmetro showCoordinates
               );
             },
           ),
