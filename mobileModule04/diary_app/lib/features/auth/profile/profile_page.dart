@@ -85,6 +85,8 @@ class __CreateEntryDialogState extends State<_CreateEntryDialog> {
   final _contentController = TextEditingController();
   String _selectedMood = 'happy';
 
+  final List<String> _moods = ['happy', 'sad', 'angry', 'neutral'];
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -92,10 +94,22 @@ class __CreateEntryDialogState extends State<_CreateEntryDialog> {
     super.dispose();
   }
 
+  final Map<String, String> _moodEmotes = {
+    'happy': '😊',
+    'sad': '😢',
+    'angry': '😠',
+    'neutral': '😐',
+  };
+
+  String _getMoodEmote(String mood) {
+    return _moodEmotes[mood] ?? '😐';
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Nova Entrada'),
+      backgroundColor: const Color(0xFFEDE7F6),
+      title: const Text('New entry'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -103,37 +117,37 @@ class __CreateEntryDialogState extends State<_CreateEntryDialog> {
             TextField(
               controller: _titleController,
               decoration: const InputDecoration(
-                labelText: 'Título',
+                labelText: 'Title',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
             const Text('Humor:'),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.sentiment_very_satisfied),
-                  color: _selectedMood == 'happy' ? Colors.green : null,
-                  onPressed: () => setState(() => _selectedMood = 'happy'),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.sentiment_neutral),
-                  color: _selectedMood == 'neutral' ? Colors.amber : null,
-                  onPressed: () => setState(() => _selectedMood = 'neutral'),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.sentiment_very_dissatisfied),
-                  color: _selectedMood == 'sad' ? Colors.red : null,
-                  onPressed: () => setState(() => _selectedMood = 'sad'),
-                ),
-              ],
+            DropdownButton<String>(
+              
+              value: _selectedMood,
+              onChanged: (value) => setState(() => _selectedMood = value!),
+              items: _moods
+                .map((mood) => DropdownMenuItem(
+                  value: mood,
+                  child: Container(
+                    color: const Color(0xFFEDE7F6),
+                    child: Row(
+                    children: [
+                      Text(_getMoodEmote(mood)),
+                      const SizedBox(width: 8),
+                      Text(mood[0].toUpperCase() + mood.substring(1)),
+                    ],
+                    ),
+                  ),
+                  ))
+                .toList(),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _contentController,
               decoration: const InputDecoration(
-                labelText: 'Conteúdo',
+                labelText: 'Content',
                 border: OutlineInputBorder(),
               ),
               maxLines: 4,
@@ -144,15 +158,14 @@ class __CreateEntryDialogState extends State<_CreateEntryDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: const Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: () {
-            if (_titleController.text.isNotEmpty &&
-                _contentController.text.isNotEmpty) {
+            if (_titleController.text.isNotEmpty && _contentController.text.isNotEmpty) {
               final entry = DiaryEntry(
                 id: const Uuid().v4(),
-                userEmail: '', // fillig by DatabaseService
+                userEmail: '',
                 date: DateTime.now(),
                 title: _titleController.text,
                 mood: _selectedMood,
@@ -161,7 +174,7 @@ class __CreateEntryDialogState extends State<_CreateEntryDialog> {
               Navigator.pop(context, entry);
             }
           },
-          child: const Text('Criar'),
+          child: const Text('Create'),
         ),
       ],
     );

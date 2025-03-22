@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 class AuthService {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  // Retorna o usuário atual, se houver
+  // return current user
   User? get currentUser => _firebaseAuth.currentUser;
 
-  // Login com Google
+  // login with google
   Future<User?> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
@@ -43,12 +43,12 @@ class AuthService {
     }
   }
 
-  // Verifica se o usuário está logado
+  // verify login
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
   // Logout
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
-    await GoogleSignIn().signOut(); // Desconecta do Google, se aplicável
+    await GoogleSignIn().signOut(); // desconect (soon :D)
   }
 }
