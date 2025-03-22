@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import './domain/diary_entry.dart';
+import '/core/services/auth_service.dart';
+import '/core/services/database_service.dart';
+import '/features/auth/presentation/welcome_page.dart';
+import 'package:diary_app/features/auth/profile/domain/diary_entry.dart';
 import 'profile_view.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -11,8 +14,23 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  //simula banco de dados
-  List<DiaryEntry> _entries = [];
+  final AuthService _authService = AuthService();
+  final DatabaseService _databaseService = DatabaseService();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthState();
+  }
+
+  void _checkAuthState() {
+    if (_authService.currentUser == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const WelcomePage()),
+      );
+    }
+  }
 
   void _showCreateEntryDialog() async {
     final newEntry = await showDialog<DiaryEntry>(
@@ -21,24 +39,38 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     if (newEntry != null) {
-      setState(() {
-        _entries.add(newEntry);
-      });
+      await _databaseService.createEntry(newEntry);
+      // StreamBuilder updating ProfileView
     }
   }
 
-  void _deleteEntry(String id) {
-    setState(() {
-      _entries.removeWhere((entry) => entry.id == id);
-    });
+  void _deleteEntry(String id) async {
+    await _databaseService.deleteEntry(id);
+    // StreamBuilder updating
   }
 
   @override
   Widget build(BuildContext context) {
-    return ProfileView(
-      entries: _entries,
-      onCreateEntryPressed: _showCreateEntryDialog,
-      onDeleteEntry: _deleteEntry,
+    return StreamBuilder<List<DiaryEntry>>(
+      stream: _databaseService.getEntries(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return const Scaffold(
+            body: Center(child: Text('Erro ao carregar entradas')),
+          );
+        }
+        final entries = snapshot.data ?? [];
+        return ProfileView(
+          entries: entries,
+          onCreateEntryPressed: _showCreateEntryDialog,
+          onDeleteEntry: _deleteEntry,
+        );
+      },
     );
   }
 }
@@ -120,10 +152,11 @@ class __CreateEntryDialogState extends State<_CreateEntryDialog> {
                 _contentController.text.isNotEmpty) {
               final entry = DiaryEntry(
                 id: const Uuid().v4(),
+                userEmail: '', // fillig by DatabaseService
+                date: DateTime.now(),
                 title: _titleController.text,
                 mood: _selectedMood,
                 content: _contentController.text,
-                date: DateTime.now(),
               );
               Navigator.pop(context, entry);
             }
