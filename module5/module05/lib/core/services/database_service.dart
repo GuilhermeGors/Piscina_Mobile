@@ -32,6 +32,7 @@ class DatabaseService {
 
     return _entriesCollection
         .where('userEmail', isEqualTo: user.email)
+        .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => DiaryEntry.fromMap(doc.id, doc.data() as Map<String, dynamic>))

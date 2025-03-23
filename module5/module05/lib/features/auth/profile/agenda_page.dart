@@ -36,7 +36,6 @@ class _AgendaPageState extends State<AgendaPage> {
       }
     });
   }
-
   void _showEntryDetails(BuildContext context, DiaryEntry entry, VoidCallback onDelete) {
     showDialog(
       context: context,
@@ -80,19 +79,15 @@ class _AgendaPageState extends State<AgendaPage> {
     );
   }
 
+  final Map<String, String> _moodEmotes = {
+    'happy': '😊',
+    'sad': '😢',
+    'angry': '😠',
+    'neutral': '😐',
+  };
+
   String _getMoodEmote(String mood) {
-    switch (mood) {
-      case 'happy':
-        return '😊';
-      case 'sad':
-        return '😢';
-      case 'angry':
-        return '😠';
-      case 'neutral':
-        return '😐';
-      default:
-        return '😐';
-    }
+    return _moodEmotes[mood] ?? '😐';
   }
 
   @override
@@ -118,6 +113,13 @@ class _AgendaPageState extends State<AgendaPage> {
           return Column(
             children: [
               TableCalendar(
+                calendarStyle: CalendarStyle(
+                  markerDecoration: BoxDecoration(
+                    color: Colors.purple[100],
+                    shape: BoxShape.circle
+                  )
+                  
+                ),
                 firstDay: DateTime.utc(2020, 1, 1),
                 lastDay: DateTime.utc(2030, 12, 31),
                 focusedDay: _focusedDay,

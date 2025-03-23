@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:diary_app/features/auth/profile/domain/diary_entry.dart';
+import 'sales_graph.dart';
 
 class ProfileView extends StatelessWidget {
   final String userName;
@@ -84,7 +85,7 @@ class ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lastTwoEntries = entries.length > 2 ? entries.sublist(0, 2) : entries;
+    final lastTwoEntries = entries.length >= 2 ? entries.sublist(0, 2) : entries;
     final moodPercentages = _calculateMoodPercentages();
 
     return Scaffold(
@@ -92,29 +93,30 @@ class ProfileView extends StatelessWidget {
         toolbarHeight: 100,
         title: Row(
           children: [
-        CircleAvatar(
-          radius: 50,
-          backgroundImage: NetworkImage(userProfilePhotoUrl),
-            backgroundColor: const Color.fromARGB(255, 173, 159, 199),
-            child: CircleAvatar(
-            radius: 48,
-            backgroundColor: Colors.white,
-            child: CircleAvatar(
-              radius: 46,
+            CircleAvatar(
+              radius: 50,
               backgroundImage: NetworkImage(userProfilePhotoUrl),
+              backgroundColor: const Color.fromARGB(255, 173, 159, 199),
+              child: CircleAvatar(
+                radius: 48,
+                backgroundColor: Colors.white,
+                child: CircleAvatar(
+                  radius: 46,
+                  backgroundImage: NetworkImage(userProfilePhotoUrl),
+                ),
+              ),
             ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Center(
+                child: Text(userName,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              ),
             ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Center(
-            child: Text(userName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.logout, color: Colors.redAccent),
-          onPressed: onLogoutPressed,
-        ),
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.redAccent),
+              onPressed: onLogoutPressed,
+            ),
           ],
         ),
       ),
@@ -124,77 +126,91 @@ class ProfileView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
-            const Text('Last two entrys:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text('Last two entries:',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             if (lastTwoEntries.isEmpty)
               const Text('No entry yet :()')
             else
               Column(
-              children: lastTwoEntries.map((entry) => Card(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                elevation: 4,
-                color: const Color(0xFFEDE7F6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                child: ListTile(
-                title: Text(entry.title),
-                subtitle: Text('${DateFormat('dd/MM/yyyy HH:mm').format(entry.date)} - ${_getMoodEmote(entry.mood)}'),
-                onTap: () => _showEntryDetails(context, entry),
-                ),
-              )).toList(),
+                children: lastTwoEntries
+                    .map((entry) => Card(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          elevation: 4,
+                          color: const Color(0xFFEDE7F6),
+                          shape:
+                              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          child: ListTile(
+                            title: Text(entry.title),
+                            subtitle: Text(
+                                '${DateFormat('dd/MM/yyyy HH:mm').format(entry.date)} - ${_getMoodEmote(entry.mood)}'),
+                            onTap: () => _showEntryDetails(context, entry),
+                          ),
+                        ))
+                    .toList(),
               ),
-              const SizedBox(height: 16),
-                Center(
-                child: Container(
-                  decoration: BoxDecoration(
-                  color: const Color(0xFFEDE7F6),
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: const Offset(0, 3),
-                    ),
-                  ],
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: Text(
-                  'Total entries: ${entries.length}',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                ),
-
             const SizedBox(height: 16),
-            const Text('Mood Percentages:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            if (moodPercentages.isEmpty)
-              const Text('No data available')
-            else
-              Container(
+            Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFD1C4E9),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: const Offset(0, 3),
-                ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    spreadRadius: 2,
+                    blurRadius: 5,
+                    offset: const Offset(0, 3),
+                  ),
                 ],
               ),
               padding: const EdgeInsets.all(8),
-              child: Column(
-                children: moodPercentages.entries.map((entry) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                  Text('${_getMoodEmote(entry.key)} ${entry.key[0].toUpperCase() + entry.key.substring(1)}: '),
-                  Text('${entry.value.toStringAsFixed(1)}%'),
-                  ],
-                ),
-                )).toList(),
+                child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                  'Your mood for your ${entries.length} entries',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Column(
+                    children: [
+                      Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        FlutterSalesGraph(
+                        salesData: moodPercentages.values.toList(),
+                        labels: moodPercentages.keys.map((mood) => _getMoodEmote(mood)).toList(),
+                        maxBarHeight: 250.0,
+                        barWidth: 40.0,
+                        colors: const [
+                          Colors.blue,
+                          Colors.green,
+                          Colors.red,
+                          Colors.yellow,
+                        ],
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                        children: moodPercentages.entries.map((entry) {
+                          return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12.5),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                            Text('${entry.value.toStringAsFixed(1)}%'),
+                            ],
+                          ),
+                          );
+                        }).toList(),
+                        ),
+                      ],
+                      ),
+                    ],
+                    ),
+                  ),
+                ],
               ),
-              ),
+            ),
           ],
         ),
       ),
