@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '/core/services/auth_service.dart';
-import '../profile//profile_page.dart';
+import '/features/auth/profile/home_page.dart';
 import 'login_view.dart';
 
 class LoginPage extends StatefulWidget {
@@ -19,11 +19,11 @@ class LoginPageState extends State<LoginPage> {
     if (user != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
+        MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Falha no login com Google')),
+        const SnackBar(content: Text('Goggle login fail :()')),
       );
     }
   }
@@ -34,11 +34,11 @@ class LoginPageState extends State<LoginPage> {
     if (user != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
+        MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Falha no login com GitHub')),
+        const SnackBar(content: Text('Github login fail :()')),
       );
     }
   }

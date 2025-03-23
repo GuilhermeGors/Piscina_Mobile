@@ -11,7 +11,7 @@ class DatabaseService {
 
   Future<void> createEntry(DiaryEntry entry) async {
     final user = _auth.currentUser;
-    if (user == null) throw Exception('Usuário não autenticado');
+    if (user == null) throw Exception('User not allowed');
 
     final entryWithEmail = DiaryEntry(
       id: entry.id,

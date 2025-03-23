@@ -13,7 +13,7 @@ class WelcomeView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Bem-vindo ao Diary App!',
+              'Welcome to  Diary App >:|',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),

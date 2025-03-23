@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'features/auth/presentation/welcome_page.dart';
-import 'features/auth/profile/profile_page.dart';
+import 'features/auth/profile/home_page.dart';
 import 'styles/theme.dart';
 import 'firebase_options.dart';
 import 'core/services/auth_service.dart';
@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Diary App',
       theme: appTheme,
-      home: AuthWrapper(), // welcomepage to logged page
+      home: AuthWrapper(),
     );
   }
 }
@@ -37,14 +37,12 @@ class AuthWrapper extends StatelessWidget {
       stream: _authService.authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          ); //loading
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasData) {
-          return const ProfilePage(); // user
+          return const HomePage(); // Usuário logado vai para HomePage
         }
-        return const WelcomePage(); // no user
+        return const WelcomePage(); // Não logado vai para WelcomePage
       },
     );
   }

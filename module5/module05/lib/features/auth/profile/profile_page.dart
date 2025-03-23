@@ -32,6 +32,14 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  void _logout() async {
+    await _authService.signOut();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const WelcomePage()),
+    );
+  }
+
   void _showCreateEntryDialog() async {
     final newEntry = await showDialog<DiaryEntry>(
       context: context,
@@ -40,13 +48,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (newEntry != null) {
       await _databaseService.createEntry(newEntry);
-      // StreamBuilder updating ProfileView
     }
   }
 
   void _deleteEntry(String id) async {
     await _databaseService.deleteEntry(id);
-    // StreamBuilder updating
   }
 
   @override
@@ -55,20 +61,19 @@ class _ProfilePageState extends State<ProfilePage> {
       stream: _databaseService.getEntries(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasError) {
-          return const Scaffold(
-            body: Center(child: Text('Erro ao carregar entradas')),
-          );
+          return const Scaffold(body: Center(child: Text('Error loading entries')));
         }
         final entries = snapshot.data ?? [];
         return ProfileView(
+          userName: _authService.currentUser?.displayName ?? 'User',
+          userProfilePhotoUrl: _authService.currentUser?.photoURL ?? '',
           entries: entries,
           onCreateEntryPressed: _showCreateEntryDialog,
           onDeleteEntry: _deleteEntry,
+          onLogoutPressed: _logout,
         );
       },
     );
@@ -84,7 +89,6 @@ class __CreateEntryDialogState extends State<_CreateEntryDialog> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   String _selectedMood = 'happy';
-
   final List<String> _moods = ['happy', 'sad', 'angry', 'neutral'];
 
   @override
@@ -94,15 +98,19 @@ class __CreateEntryDialogState extends State<_CreateEntryDialog> {
     super.dispose();
   }
 
-  final Map<String, String> _moodEmotes = {
-    'happy': '😊',
-    'sad': '😢',
-    'angry': '😠',
-    'neutral': '😐',
-  };
-
   String _getMoodEmote(String mood) {
-    return _moodEmotes[mood] ?? '😐';
+    switch (mood) {
+      case 'happy':
+        return '😊';
+      case 'sad':
+        return '😢';
+      case 'angry':
+        return '😠';
+      case 'neutral':
+        return '😐';
+      default:
+        return '😐';
+    }
   }
 
   @override
@@ -116,50 +124,37 @@ class __CreateEntryDialogState extends State<_CreateEntryDialog> {
           children: [
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Title', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
             const Text('Humor:'),
             DropdownButton<String>(
-              
               value: _selectedMood,
               onChanged: (value) => setState(() => _selectedMood = value!),
               items: _moods
-                .map((mood) => DropdownMenuItem(
-                  value: mood,
-                  child: Container(
-                    color: const Color(0xFFEDE7F6),
-                    child: Row(
-                    children: [
-                      Text(_getMoodEmote(mood)),
-                      const SizedBox(width: 8),
-                      Text(mood[0].toUpperCase() + mood.substring(1)),
-                    ],
-                    ),
-                  ),
-                  ))
-                .toList(),
+                  .map((mood) => DropdownMenuItem(
+                        value: mood,
+                        child: Row(
+                          children: [
+                            Text(_getMoodEmote(mood)),
+                            const SizedBox(width: 8),
+                            Text(mood[0].toUpperCase() + mood.substring(1)),
+                          ],
+                        ),
+                      ))
+                  .toList(),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _contentController,
-              decoration: const InputDecoration(
-                labelText: 'Content',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Content', border: OutlineInputBorder()),
               maxLines: 4,
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
         ElevatedButton(
           onPressed: () {
             if (_titleController.text.isNotEmpty && _contentController.text.isNotEmpty) {

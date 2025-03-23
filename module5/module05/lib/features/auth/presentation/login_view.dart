@@ -27,7 +27,7 @@ class LoginView extends StatelessWidget {
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 icon: const Icon(Icons.g_mobiledata),
-                label: const Text('Entrar com Google'),
+                label: const Text('Login with Google'),
                 onPressed: onGoogleLoginPressed,
               ),
               const SizedBox(height: 10),
@@ -35,7 +35,7 @@ class LoginView extends StatelessWidget {
               const SizedBox(height: 10),
               ElevatedButton.icon(
                 icon: const Icon(Icons.code),
-                label: const Text('Entrar com GitHub'),
+                label: const Text('login with GitHub'),
                 onPressed: onGitHubLoginPressed,
               ),
             ],
