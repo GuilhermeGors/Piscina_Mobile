@@ -7,7 +7,11 @@ final ThemeData appTheme = ThemeData(
   textTheme: const TextTheme(
     bodyLarge: TextStyle(color: textColor, fontSize: 16),
     labelLarge: TextStyle(color: Colors.white, fontSize: 16),
-    headlineMedium: TextStyle(color: primaryColor, fontSize: 24),
+    headlineMedium: TextStyle(
+      color: primaryColor,
+      fontSize: 24,
+      fontWeight: FontWeight.bold,
+    ),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
@@ -18,16 +22,21 @@ final ThemeData appTheme = ThemeData(
     ),
   ),
   textButtonTheme: TextButtonThemeData(
-    style: TextButton.styleFrom(
-      foregroundColor: secondaryColor,
-    ),
+    style: TextButton.styleFrom(foregroundColor: secondaryColor),
   ),
   dialogTheme: DialogTheme(
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     backgroundColor: Colors.white,
+    titleTextStyle: const TextStyle(
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+      color: textColor,
+    ),
+    contentTextStyle: const TextStyle(fontSize: 16, color: textColor),
   ),
-  cardTheme: const CardTheme(
+  cardTheme: CardTheme(
     color: Colors.white,
-    elevation: 2,
+    elevation: 4,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
   ),
 );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '/core/services/auth_service.dart';
-import '/features/auth/profile/home_page.dart';
-import 'login_view.dart';
+import 'home_page.dart';
+import '../views/login_view.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,9 +22,9 @@ class LoginPageState extends State<LoginPage> {
         MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Goggle login fail :()')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Goggle login fail :()')));
     }
   }
 
@@ -37,9 +37,9 @@ class LoginPageState extends State<LoginPage> {
         MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Github login fail :()')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Github login fail :()')));
     }
   }
 

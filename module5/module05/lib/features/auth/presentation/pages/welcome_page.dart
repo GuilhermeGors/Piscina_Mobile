@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
-import 'welcome_view.dart';
+import '../views/welcome_view.dart';
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});

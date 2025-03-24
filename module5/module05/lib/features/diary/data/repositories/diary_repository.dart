@@ -1,31 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../features/diary/domain/models/diary_entry.dart';
+import '../../domain/models/diary_entry.dart';
 
-class DatabaseService {
+class DiaryRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   CollectionReference get _entriesCollection =>
       _firestore.collection('diary_entries');
 
-  Future<void> createEntry(DiaryEntry entry) async {
-    final user = _auth.currentUser;
-    if (user == null) throw Exception('User not allowed');
-
-    final entryWithEmail = DiaryEntry(
-      id: entry.id,
-      userEmail: user.email ?? '',
-      date: entry.date,
-      title: entry.title,
-      mood: entry.mood,
-      content: entry.content,
-    );
-
-    await _entriesCollection.doc(entry.id).set(entryWithEmail.toMap());
-  }
-
-  // read entrys
   Stream<List<DiaryEntry>> getEntries() {
     final user = _auth.currentUser;
     if (user == null) return Stream.value([]);
@@ -47,7 +30,6 @@ class DatabaseService {
         );
   }
 
-  // deleting a entry
   Future<void> deleteEntry(String id) async {
     await _entriesCollection.doc(id).delete();
   }

@@ -1,8 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'features/auth/presentation/welcome_page.dart';
-import 'features/auth/profile/home_page.dart';
+import 'features/auth/presentation/pages/welcome_page.dart';
+import 'features/auth/presentation/pages/home_page.dart';
 import 'styles/theme.dart';
 import 'firebase_options.dart';
 import 'core/services/auth_service.dart';
@@ -37,7 +37,9 @@ class AuthWrapper extends StatelessWidget {
       stream: _authService.authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         if (snapshot.hasData) {
           return const HomePage(); // Usuário logado vai para HomePage

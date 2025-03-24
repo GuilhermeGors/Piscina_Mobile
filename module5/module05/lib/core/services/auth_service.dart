@@ -14,31 +14,32 @@ class AuthService {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return null; // Usuário cancelou o login
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential =
-          await _firebaseAuth.signInWithCredential(credential);
+      final UserCredential userCredential = await _firebaseAuth
+          .signInWithCredential(credential);
       return userCredential.user;
     } catch (e) {
-      print('Erro no login com Google: $e');
+      print('Google Login error: $e');
       return null;
     }
   }
 
-  // Login com GitHub
+  // Login with Github
   Future<User?> signInWithGitHub(BuildContext context) async {
     try {
-       GithubAuthProvider githubProvider = GithubAuthProvider();
+      GithubAuthProvider githubProvider = GithubAuthProvider();
 
-      final UserCredential userCredential =
-          await _firebaseAuth.signInWithProvider(githubProvider);
+      final UserCredential userCredential = await _firebaseAuth
+          .signInWithProvider(githubProvider);
       return userCredential.user;
     } catch (e) {
-      print('Erro no login com GitHub: $e');
+      debugPrint('Github Login Error: $e');
       return null;
     }
   }

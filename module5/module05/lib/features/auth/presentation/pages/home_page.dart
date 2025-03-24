@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:diary_app/features/auth/profile/profile_page.dart';
-import 'package:diary_app/features/auth/profile/agenda_page.dart';
+import 'package:diary_app/features/diary/presentation/pages/profile_page.dart';
+import 'package:diary_app/features/diary/presentation/pages/agenda_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -9,7 +9,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final Color backgroundColor = const Color(0xFFEDE7F6);
 
@@ -30,13 +31,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     return Scaffold(
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          ProfilePage(),
-          AgendaPage(),
-        ],
+        children: [ProfilePage(), AgendaPage()],
       ),
       bottomNavigationBar: Container(
-        color: backgroundColor.withOpacity(0.8),
+        color: backgroundColor.withAlpha((0.8 * 255).toInt()),
         height: 80,
         child: TabBar(
           controller: _tabController,
